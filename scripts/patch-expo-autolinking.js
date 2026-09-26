@@ -24,7 +24,14 @@ try {
   if (fs.existsSync(expoAutolinkingPath)) {
     let content = fs.readFileSync(expoAutolinkingPath, 'utf8');
     if (!content.includes('fs.promises.realpath')) {
-      content = patchCode + content;
+      if (content.startsWith('#!')) {
+        const firstLineEnd = content.indexOf('\n');
+        const shebang = content.slice(0, firstLineEnd + 1);
+        const rest = content.slice(firstLineEnd + 1);
+        content = shebang + patchCode + rest;
+      } else {
+        content = patchCode + content;
+      }
       fs.writeFileSync(expoAutolinkingPath, content, 'utf8');
       console.log('✅ [patch-expo-autolinking] node_modules/expo/bin/autolinking patched successfully.');
     }

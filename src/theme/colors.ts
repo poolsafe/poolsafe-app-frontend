@@ -11,7 +11,34 @@
  * para utilitários de classe.
  */
 
-export const darkColors = {
+export type ColorRole =
+  | 'background'
+  | 'backgroundDeep'
+  | 'surface'
+  | 'surfaceRaised'
+  | 'surfaceGlass'
+  | 'border'
+  | 'borderSubtle'
+  | 'textPrimary'
+  | 'textSecondary'
+  | 'textMuted'
+  | 'textDisabled'
+  | 'primary'
+  | 'primaryPressed'
+  | 'primarySoft'
+  | 'success'
+  | 'successSoft'
+  | 'warning'
+  | 'warningSoft'
+  | 'danger'
+  | 'dangerSoft'
+  | 'info'
+  | 'offline'
+  | 'overlay';
+
+export type ColorTokens = Record<ColorRole, string>;
+
+export const darkColors: ColorTokens = {
   // Fundos
   background: '#041728',
   backgroundDeep: '#070E16',
@@ -46,9 +73,9 @@ export const darkColors = {
   info: '#44A8FF',
   offline: '#78909C',
   overlay: 'rgba(0, 7, 14, 0.72)',
-} as const;
+};
 
-export const lightColors = {
+export const lightColors: ColorTokens = {
   // Fundos
   background: '#F3FAFC',
   backgroundDeep: '#E2F3F7',
@@ -83,6 +110,4 @@ export const lightColors = {
   info: '#006FA8',
   offline: '#607D86',
   overlay: 'rgba(1, 20, 29, 0.52)',
-} as const;
-
-export type ColorTokens = typeof darkColors;
+};

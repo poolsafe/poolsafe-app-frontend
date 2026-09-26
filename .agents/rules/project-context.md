@@ -98,6 +98,29 @@ Não crie abstrações ou estado global sem uma necessidade concreta.
 - Não modifique contratos compartilhados silenciosamente.
 - No bootstrap inicial, prepare apenas a estrutura, as dependências e as configurações básicas. Não implemente funcionalidades do produto sem nova autorização.
 
+## Fundação Visual e Navegação (Fatia 1)
+
+### Design System e Tokens
+- **Cores Semânticas:** `src/theme/colors.ts` é a fonte única de verdade para os mapas de cores claro e escuro (`darkColors` e `lightColors`).
+- **Tokens Estruturais:** `src/theme/tokens.ts` centraliza escala tipográfica (11 variantes), espaçamentos (base 4), raios, alvos de toque (mínimo 44x44) e gradientes.
+- **Tema:** Fornecido via `ThemeProvider` e consumido com `useTheme()`. Acompanha o sistema (`useColorScheme()`) com fallback escuro e ajuste dinâmico da `StatusBar`.
+- **Tipografia:** Família Inter para interface (`Inter_400Regular`, `Inter_600SemiBold`, `Inter_700Bold`, `Inter_800ExtraBold`) e JetBrains Mono (`JetBrainsMono_600SemiBold`) restrita a badges/telemetria. Licenças: SIL Open Font License 1.1 e MIT. Fallback nativo automático sem bloquear o app.
+- **Ícones:** Exclusivamente a família Feather via `@expo/vector-icons`, envelopada pela primitiva tipada `AppIcon` (tamanhos 16, 20 e 24).
+- **Primitivas de Interface:** `AppText`, `AppIcon`, `AppButton`, `AppCard`, `AppBadge`, `AppDivider`, `AppBackground`, `ScreenHeader`.
+- **Componente Interno DEV:** `src/components/dev/RoutePlaceholder.tsx` para sinalizar rotas registradas sem mockar regras de negócio nem antecipar dados.
+
+### Arquitetura de Navegação e Estabilidade Fabric no Android
+- **Árvore Expo Router:**
+  - `app/index.tsx`: Gateway técnico ativo em `__DEV__` (em produção redireciona para `/(public)/login`).
+  - `app/(public)/`: Rotas públicas (`login`, `register`, `forgot-password`, `reset-password`).
+  - `app/(app)/`: Shell autenticado com Stack contendo `(tabs)` e detalhes (`alerts/[id]`, `cameras/[id]`).
+  - `app/(app)/(tabs)/`: 4 abas na ordem estrita: Home, Histórico, Câmeras, Definições.
+- **Detalhes sobre as Abas:** As rotas `alerts/[id]` e `cameras/[id]` sobrepõem as abas inferiores e contam com retorno garantido para a aba de origem.
+- **Estabilidade do Fabric (Android):**
+  - Native screens (`react-native-screens`) opera normalmente em modo nativo padrão.
+  - Contêineres de scroll e estruturais utilizam `removeClippedSubviews={false}` e evitam `overflow: 'hidden'` em hierarquias transitórias para prevenir conflitos no `ReactClippingViewManager` durante transições.
+  - Transições do stack raiz e do app stack utilizam `animation: 'none'` para montagem atômica imediata.
+
 ## Pendências conhecidas
 
 - versões exatas compatíveis serão fixadas pelo projeto e pelo lockfile;
@@ -106,4 +129,5 @@ Não crie abstrações ou estado global sem uma necessidade concreta.
 - mecanismo definitivo de link ou código para redefinição de senha;
 - estratégia de geração ou sincronização dos tipos a partir de `openapi.yaml`;
 - testes automatizados serão definidos posteriormente.
+
 
