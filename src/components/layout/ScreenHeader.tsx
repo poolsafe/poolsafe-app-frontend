@@ -8,7 +8,7 @@ import { useTheme } from '@/theme/useTheme';
 import { spacing } from '@/theme/tokens';
 
 export interface ScreenHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
@@ -58,9 +58,13 @@ export function ScreenHeader({
           </View>
         )}
         <View style={styles.titlesContainer}>
-          <AppText variant="heading2" numberOfLines={1}>
-            {title}
-          </AppText>
+          {typeof title === 'string' ? (
+            <AppText variant="heading2" numberOfLines={1}>
+              {title}
+            </AppText>
+          ) : (
+            title
+          )}
           {subtitle ? (
             <AppText variant="small" colorRole="textMuted" numberOfLines={1} style={styles.subtitle}>
               {subtitle}

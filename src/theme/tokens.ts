@@ -150,3 +150,27 @@ export const gradients = {
     blue: ['#EBF3FA', '#D9E7F5'] as const,
   },
 } as const;
+
+export const logoTokens = {
+  originalWidth: 1500,
+  originalHeight: 394,
+  aspectRatio: 1500 / 394,
+  contentBounds: {
+    minX: 75,
+    maxX: 1425,
+    minY: 70,
+    maxY: 332,
+    visibleWidth: 1350,
+    visibleHeight: 262,
+  },
+  trimOffsetRatio: {
+    horizontal: 0.05, // 75 / 1500
+    vertical: 0.08,
+  },
+  heights: {
+    compact: 28,
+    regular: 32,
+    tablet: 36,
+  },
+} as const;
+

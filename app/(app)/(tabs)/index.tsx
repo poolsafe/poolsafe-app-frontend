@@ -9,6 +9,7 @@ import {
 
 import { AppBackground } from '@/components/layout/AppBackground';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { AppLogo } from '@/components/primitives/AppLogo';
 import { AppCard } from '@/components/primitives/AppCard';
 import { AppText } from '@/components/primitives/AppText';
 import { AppBadge } from '@/components/primitives/AppBadge';
@@ -171,7 +172,7 @@ export default function HomeScreen() {
   return (
     <AppBackground edges={['top', 'left', 'right']}>
       <ScreenHeader
-        title="PoolSafe"
+        title={<AppLogo />}
         subtitle={greeting}
         showThemeToggle={true}
       />

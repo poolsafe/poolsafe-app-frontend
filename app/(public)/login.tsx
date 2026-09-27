@@ -23,6 +23,7 @@ import { loginSchema, LoginFormData } from '@/schemas/auth';
 import { useAuth } from '@/providers/AuthContext';
 import { ApiError } from '@/services/api/errors';
 import { ApiErrorCodes } from '@/services/api/types';
+import { AppLogo } from '@/components/primitives/AppLogo';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function LoginScreen() {
   return (
     <AppBackground edges={['top', 'bottom', 'left', 'right']}>
       <ScreenHeader
-        title="PoolSafe"
+        title={<AppLogo />}
         subtitle="Acesso ao sistema"
         showThemeToggle={true}
       />
