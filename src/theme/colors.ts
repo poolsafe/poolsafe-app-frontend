@@ -64,8 +64,8 @@ export const darkColors: ColorTokens = {
   primarySoft: 'rgba(0, 217, 232, 0.12)',
 
   // Semânticas
-  success: '#00D8B4',
-  successSoft: 'rgba(0, 216, 180, 0.12)',
+  success: '#10B981',
+  successSoft: 'rgba(16, 185, 129, 0.15)',
   warning: '#F6C95C',
   warningSoft: 'rgba(246, 201, 92, 0.12)',
   danger: '#FF4D73',
@@ -101,8 +101,8 @@ export const lightColors: ColorTokens = {
   primarySoft: '#DDF6F9',
 
   // Semânticas
-  success: '#007E68',
-  successSoft: '#DDF5EF',
+  success: '#15803D',
+  successSoft: '#DCFCE7',
   warning: '#755500',
   warningSoft: '#FFF4D1',
   danger: '#B4234D',

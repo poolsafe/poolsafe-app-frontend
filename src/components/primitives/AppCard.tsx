@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ViewProps, StyleSheet, ViewStyle } from 'react-native';
+import { View, ViewProps, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 
 import { useTheme } from '@/theme/useTheme';
 import { radius, spacing } from '@/theme/tokens';
@@ -10,7 +10,7 @@ export interface AppCardProps extends ViewProps {
   variant?: CardVariant;
   padding?: number;
   borderRadius?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 }
 

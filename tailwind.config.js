@@ -17,7 +17,7 @@ module.exports = {
         border: '#175464',
         primary: '#00D9E8',
         'primary-pressed': '#00B8C6',
-        success: '#00D8B4',
+        success: '#10B981',
         warning: '#F6C95C',
         danger: '#FF4D73',
         info: '#44A8FF',
