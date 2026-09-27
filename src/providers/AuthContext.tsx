@@ -28,6 +28,8 @@ export interface AuthContextValue {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   retryRestore: () => Promise<void>;
+  updateUser: (updatedUser: AuthUser) => void;
+  updateTokens: (newTokens: AuthTokens) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -115,6 +117,14 @@ export function AuthProvider({
     await restore();
   }, [restore]);
 
+  const updateUser = useCallback((updatedUser: AuthUser) => {
+    setUser(updatedUser);
+  }, []);
+
+  const updateTokens = useCallback((newTokens: AuthTokens) => {
+    setTokens(newTokens);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -125,8 +135,21 @@ export function AuthProvider({
       register,
       logout,
       retryRestore,
+      updateUser,
+      updateTokens,
     }),
-    [status, user, tokens, recoverableError, login, register, logout, retryRestore],
+    [
+      status,
+      user,
+      tokens,
+      recoverableError,
+      login,
+      register,
+      logout,
+      retryRestore,
+      updateUser,
+      updateTokens,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -184,6 +184,96 @@ export class HttpClient {
 
     await this.parseResponse<void>(response);
   }
+
+  public async patch<T>(
+    path: string,
+    body?: unknown,
+    options: RequestOptions = {},
+  ): Promise<ApiResponse<T>> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'application/json, application/problem+json',
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'PATCH',
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    return this.parseResponse<ApiResponse<T>>(response);
+  }
+
+  public async put<T>(
+    path: string,
+    body?: unknown,
+    options: RequestOptions = {},
+  ): Promise<ApiResponse<T>> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'application/json, application/problem+json',
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'PUT',
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    return this.parseResponse<ApiResponse<T>>(response);
+  }
+
+  public async putNoContent(
+    path: string,
+    body?: unknown,
+    options: RequestOptions = {},
+  ): Promise<void> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'application/json, application/problem+json',
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'PUT',
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    await this.parseResponse<void>(response);
+  }
 }
 
 export const apiClient = new HttpClient();

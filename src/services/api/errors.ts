@@ -82,6 +82,10 @@ export class ApiError extends Error {
     return this.code === ApiErrorCodes.ACCOUNT_CANNOT_BE_CREATED;
   }
 
+  public isReauthenticationFailed(): boolean {
+    return this.code === ApiErrorCodes.REAUTHENTICATION_FAILED || (this.status === 403 && this.code === 'REAUTHENTICATION_FAILED');
+  }
+
   public static fromProblemDetails(problem: ProblemDetails, fallbackStatus = 500): ApiError {
     return new ApiError({
       status: problem.status || fallbackStatus,

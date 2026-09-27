@@ -7,6 +7,8 @@ import type {
   LoginPayload,
   RegisterPayload,
   UserProfileResponseData,
+  UpdateProfilePayload,
+  ChangePasswordPayload,
 } from '../api/types.ts';
 import { clearSession, loadSession, saveSession } from './secure-storage.ts';
 import { refreshCoordinator, RefreshCoordinator } from './refresh-coordinator.ts';
@@ -56,6 +58,25 @@ export class AuthService {
       token: accessToken,
     });
     return response.data;
+  }
+
+  public async updateProfile(
+    accessToken: string,
+    payload: UpdateProfilePayload,
+  ): Promise<AuthUser> {
+    const response = await this.client.patch<UserProfileResponseData>('/users/me', payload, {
+      token: accessToken,
+    });
+    return response.data;
+  }
+
+  public async changePassword(
+    accessToken: string,
+    payload: ChangePasswordPayload,
+  ): Promise<void> {
+    await this.client.putNoContent('/users/me/password', payload, {
+      token: accessToken,
+    });
   }
 
   /**

@@ -73,6 +73,15 @@ export interface LogoutPayload {
   refreshToken: string;
 }
 
+export interface UpdateProfilePayload {
+  name: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // Códigos estáveis de erro conhecidos
 export const ApiErrorCodes = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -81,6 +90,7 @@ export const ApiErrorCodes = {
   AUTHENTICATION_REQUIRED: 'AUTHENTICATION_REQUIRED',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   ACCESS_DENIED: 'ACCESS_DENIED',
+  REAUTHENTICATION_FAILED: 'REAUTHENTICATION_FAILED',
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   RATE_LIMITED: 'RATE_LIMITED',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
