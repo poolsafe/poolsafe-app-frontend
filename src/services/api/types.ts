@@ -107,6 +107,8 @@ export const ApiErrorCodes = {
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   INVALID_RESET_TOKEN: 'INVALID_RESET_TOKEN',
   RESET_TOKEN_EXPIRED: 'RESET_TOKEN_EXPIRED',
+  MONITORING_STATE_CONFLICT: 'MONITORING_STATE_CONFLICT',
+  CAMERA_NOT_OPERATIONAL: 'CAMERA_NOT_OPERATIONAL',
   RATE_LIMITED: 'RATE_LIMITED',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR',
@@ -224,5 +226,51 @@ export interface CameraItem {
 
 export interface CameraDetailItem extends CameraItem {
   recentAlerts: CameraRecentAlert[];
+}
+
+// Monitoramentos — Fatia 6
+export type MonitoringStatus = 'ATIVO' | 'PAUSADO' | 'ENCERRADO';
+
+export type MonitoringOperationalStatus =
+  | 'ATIVO'
+  | 'PAUSADO'
+  | 'DEGRADADO'
+  | 'INDISPONIVEL';
+
+export type MonitoringOperationalReason =
+  | 'OPERACIONAL'
+  | 'SEM_SESSAO'
+  | 'PAUSADO_PELO_USUARIO'
+  | 'CAMERAS_INDISPONIVEIS'
+  | 'SEM_CAMERA_ONLINE';
+
+export interface MonitoringCameraItem {
+  id: string;
+  name: string;
+  connectionStatus: CameraConnectionStatus;
+}
+
+export interface MonitoringItem {
+  id: string;
+  status: MonitoringStatus;
+  operationalStatus: MonitoringOperationalStatus;
+  operationalReason: MonitoringOperationalReason;
+  cameras: MonitoringCameraItem[];
+  startedAt: string;
+  pausedAt: string | null;
+  endedAt: string | null;
+  updatedAt: string;
+}
+
+export interface CreateMonitoringPayload {
+  cameraIds: string[];
+}
+
+export interface PauseMonitoringPayload {
+  password: string;
+}
+
+export interface EndMonitoringPayload {
+  password: string;
 }
 

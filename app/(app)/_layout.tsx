@@ -18,6 +18,7 @@ export default function AppLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="alerts/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="cameras/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="monitoring" options={{ headerShown: false }} />
     </Stack>
   );
 }

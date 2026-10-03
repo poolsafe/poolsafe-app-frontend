@@ -279,11 +279,11 @@ export default function CameraDetailsScreen() {
               </View>
             </AppCard>
 
-            {/* 2. Card de Monitoramento da Câmera */}
+            {/* 2. Card de Monitoramento da Câmera (Simplificado) */}
             <AppCard variant="raised" style={styles.sectionCard}>
               <View style={styles.monitoringHeader}>
                 <View style={styles.monitoringTitleRow}>
-                  <AppIcon name={monitoringInfo.icon} size={20} color={colors.primary} />
+                  <AppIcon name="shield" size={20} color={colors.primary} />
                   <AppText variant="heading3">Monitoramento</AppText>
                 </View>
                 <AppBadge
@@ -293,14 +293,7 @@ export default function CameraDetailsScreen() {
                 />
               </View>
 
-              <AppText variant="bodyStrong" style={styles.monitoringStatusTitle}>
-                {monitoringInfo.title}
-              </AppText>
-              <AppText variant="body" colorRole="textSecondary">
-                {monitoringInfo.description}
-              </AppText>
-
-              {data.currentMonitoring && (
+              {data.currentMonitoring ? (
                 <View style={[styles.sessionBox, { backgroundColor: colors.surfaceRaised }]}>
                   <AppText variant="small" colorRole="textMuted">
                     Sessão associada:
@@ -309,15 +302,42 @@ export default function CameraDetailsScreen() {
                     #{data.currentMonitoring.id} ({data.currentMonitoring.status})
                   </AppText>
                 </View>
+              ) : (
+                <View style={[styles.sessionBox, { backgroundColor: colors.surfaceRaised }]}>
+                  <AppText variant="small" colorRole="textMuted">
+                    Sessão associada:
+                  </AppText>
+                  <AppText variant="caption" colorRole="textMuted">
+                    Nenhuma sessão em andamento
+                  </AppText>
+                </View>
               )}
 
               <AppDivider style={styles.divider} />
 
-              <View style={styles.noticeBox}>
-                <AppIcon name="info" size={14} color={colors.textMuted} decorative={true} />
-                <AppText variant="caption" colorRole="textMuted" style={styles.noticeText}>
-                  O controle de ativação, pausa e retomada da vigilância será disponibilizado na Fatia 6.
-                </AppText>
+              <View style={styles.monitoringActionsContainer}>
+                {data.currentMonitoring ? (
+                  <AppButton
+                    variant="secondary"
+                    title="Gerenciar sessão"
+                    icon="sliders"
+                    fullWidth={true}
+                    onPress={() => router.push('/monitoring')}
+                  />
+                ) : (
+                  <AppButton
+                    variant="primary"
+                    title="Ativar monitoramento"
+                    icon="play"
+                    fullWidth={true}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/monitoring',
+                        params: { selectedCameraId: data.id },
+                      })
+                    }
+                  />
+                )}
               </View>
             </AppCard>
 
@@ -576,5 +596,8 @@ const styles = StyleSheet.create({
   evidenceBadge: {
     paddingVertical: 1,
     paddingHorizontal: 5,
+  },
+  monitoringActionsContainer: {
+    marginTop: spacing[1],
   },
 });

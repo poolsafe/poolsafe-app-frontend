@@ -274,6 +274,30 @@ export class HttpClient {
 
     await this.parseResponse<void>(response);
   }
+
+  public async delete<T>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'application/json, application/problem+json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'DELETE',
+        headers,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    return this.parseResponse<ApiResponse<T>>(response);
+  }
 }
 
 export const apiClient = new HttpClient();

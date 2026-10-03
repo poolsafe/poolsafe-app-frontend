@@ -18,6 +18,8 @@ import { AppButton } from '@/components/primitives/AppButton';
 import { AppIcon, FeatherIconName } from '@/components/primitives/AppIcon';
 import { AppDivider } from '@/components/primitives/AppDivider';
 
+import { useRouter } from 'expo-router';
+
 import { useAuth } from '@/providers/AuthContext';
 import { useHomeQuery } from '@/hooks/useHomeQuery';
 import { useTheme } from '@/theme/useTheme';
@@ -62,7 +64,22 @@ function getMonitoringDisplay(
   status: OverallMonitoringStatus,
   reason: OverallMonitoringReason,
   colors: ColorTokens,
+  pausedSessions: number = 0,
 ) {
+  if (status === 'DEGRADADO' && reason === 'SESSIONS_MIXED') {
+    return {
+      badgeVariant: 'success' as const,
+      badgeLabel: 'PARCIAL',
+      title: 'Proteção parcial',
+      description:
+        pausedSessions === 1
+          ? 'Vigilância ativa com 1 sessão pausada.'
+          : `Vigilância ativa com ${pausedSessions} sessões pausadas.`,
+      icon: 'activity' as FeatherIconName,
+      borderColor: colors.success,
+    };
+  }
+
   switch (status) {
     case 'ATIVO':
       return {
@@ -90,9 +107,7 @@ function getMonitoringDisplay(
         description:
           reason === 'CAMERAS_INDISPONIVEIS'
             ? 'Uma ou mais câmeras da sessão estão offline ou indisponíveis.'
-            : reason === 'SESSIONS_MIXED'
-              ? 'Existem sessões ativas e sessões pausadas simultaneamente.'
-              : 'O sistema está operando com limitações de captura.',
+            : 'O sistema está operando com limitações de captura.',
         icon: 'alert-triangle' as FeatherIconName,
         borderColor: colors.warning,
       };
@@ -156,6 +171,7 @@ function resolveWarningInfo(warning: HomeWarning): {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
   const {
@@ -250,6 +266,7 @@ export default function HomeScreen() {
                 data.overallMonitoring.status,
                 data.overallMonitoring.reason,
                 colors,
+                data.overallMonitoring.pausedSessions,
               );
               return (
                 <AppCard
@@ -309,6 +326,26 @@ export default function HomeScreen() {
                           {data.overallMonitoring.degradedSessions}
                         </AppText>
                       </View>
+                    )}
+                  </View>
+
+                  <AppDivider style={styles.cardDivider} />
+
+                  <View style={styles.heroActionContainer}>
+                    {data.overallMonitoring.currentSessions === 0 ? (
+                      <AppButton
+                        variant="primary"
+                        title="Ativar monitoramento"
+                        icon="play"
+                        onPress={() => router.push('/monitoring')}
+                      />
+                    ) : (
+                      <AppButton
+                        variant="secondary"
+                        title="Gerenciar monitoramento"
+                        icon="sliders"
+                        onPress={() => router.push('/monitoring')}
+                      />
                     )}
                   </View>
                 </AppCard>
@@ -544,6 +581,9 @@ const styles = StyleSheet.create({
   },
   metricItem: {
     gap: spacing[1],
+  },
+  heroActionContainer: {
+    marginTop: spacing[1],
   },
   sectionCard: {
     gap: spacing[3],

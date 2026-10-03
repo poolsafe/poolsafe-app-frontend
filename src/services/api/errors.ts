@@ -94,6 +94,14 @@ export class ApiError extends Error {
     return this.status === 410 || this.code === ApiErrorCodes.RESET_TOKEN_EXPIRED;
   }
 
+  public isMonitoringStateConflict(): boolean {
+    return this.status === 409 || this.code === ApiErrorCodes.MONITORING_STATE_CONFLICT;
+  }
+
+  public isCameraNotOperational(): boolean {
+    return this.status === 422 || this.code === ApiErrorCodes.CAMERA_NOT_OPERATIONAL;
+  }
+
   public static fromProblemDetails(problem: ProblemDetails, fallbackStatus = 500): ApiError {
     return new ApiError({
       status: problem.status || fallbackStatus,
