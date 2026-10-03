@@ -174,6 +174,17 @@ export default function LoginScreen() {
                 )}
               />
 
+              <View style={styles.forgotPasswordContainer}>
+                <AppButton
+                  testID="login-go-to-forgot-password"
+                  variant="ghost"
+                  title="Esqueci minha senha"
+                  icon="help-circle"
+                  disabled={isSubmitting}
+                  onPress={() => router.push('/(public)/forgot-password')}
+                />
+              </View>
+
               <View style={styles.actionContainer}>
                 <AppButton
                   testID="login-submit-button"
@@ -235,6 +246,10 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing[2],
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginTop: spacing[1],
   },
   actionContainer: {
     marginTop: spacing[3],

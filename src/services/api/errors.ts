@@ -86,6 +86,14 @@ export class ApiError extends Error {
     return this.code === ApiErrorCodes.REAUTHENTICATION_FAILED || (this.status === 403 && this.code === 'REAUTHENTICATION_FAILED');
   }
 
+  public isInvalidResetToken(): boolean {
+    return this.status === 422 || this.code === ApiErrorCodes.INVALID_RESET_TOKEN;
+  }
+
+  public isResetTokenExpired(): boolean {
+    return this.status === 410 || this.code === ApiErrorCodes.RESET_TOKEN_EXPIRED;
+  }
+
   public static fromProblemDetails(problem: ProblemDetails, fallbackStatus = 500): ApiError {
     return new ApiError({
       status: problem.status || fallbackStatus,

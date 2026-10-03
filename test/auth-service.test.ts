@@ -234,3 +234,75 @@ test('15. Logout revoga sessão e limpa SecureStore', async () => {
   assert.equal(receivedRefreshToken, 'psrt_10.token_para_revogar');
   assert.equal(store[SESSION_STORAGE_KEY], undefined, 'SecureStore deve ser limpo no logout');
 });
+
+test('16. (Fatia 3B) AuthService - forgotPassword e resetPassword executam endpoints canônicos', async () => {
+  let forgotCalled = false;
+  let forgotPayload: unknown = null;
+  let resetCalled = false;
+  let resetPayload: unknown = null;
+
+  const mockClient = {
+    post: async <T>(path: string, body?: unknown): Promise<ApiResponse<T>> => {
+      if (path === '/auth/forgot-password') {
+        forgotCalled = true;
+        forgotPayload = body;
+        return {
+          data: {
+            message: 'Se a conta existir, enviaremos as instruções de recuperação.',
+          } as unknown as T,
+        };
+      }
+      throw new Error(`Rota inesperada: ${path}`);
+    },
+    postNoContent: async (path: string, body?: unknown): Promise<void> => {
+      if (path === '/auth/reset-password') {
+        resetCalled = true;
+        resetPayload = body;
+        return;
+      }
+      throw new Error(`Rota inesperada: ${path}`);
+    },
+  } as unknown as HttpClient;
+
+  const service = new AuthService(mockClient, {} as unknown as RefreshCoordinator);
+
+  // 1. forgotPassword
+  const forgotResult = await service.forgotPassword('usuario@example.com');
+  assert.equal(forgotCalled, true);
+  assert.deepEqual(forgotPayload, { email: 'usuario@example.com' });
+  assert.equal(
+    forgotResult.message,
+    'Se a conta existir, enviaremos as instruções de recuperação.',
+  );
+
+  // 2. resetPassword
+  await service.resetPassword({
+    token: 'AB7K-2P9Q',
+    newPassword: 'nova-senha-segura',
+  });
+  assert.equal(resetCalled, true);
+  assert.deepEqual(resetPayload, {
+    token: 'AB7K-2P9Q',
+    newPassword: 'nova-senha-segura',
+  });
+
+  // 3. Verificação de métodos em ApiError para INVALID_RESET_TOKEN e RESET_TOKEN_EXPIRED
+  const invalidTokenErr = ApiError.fromProblemDetails({
+    status: 422,
+    code: 'INVALID_RESET_TOKEN',
+    title: 'Token inválido',
+    detail: 'Código inválido.',
+  });
+  assert.equal(invalidTokenErr.isInvalidResetToken(), true);
+  assert.equal(invalidTokenErr.isResetTokenExpired(), false);
+
+  const expiredTokenErr = ApiError.fromProblemDetails({
+    status: 410,
+    code: 'RESET_TOKEN_EXPIRED',
+    title: 'Token expirado',
+    detail: 'Código expirado.',
+  });
+  assert.equal(expiredTokenErr.isResetTokenExpired(), true);
+  assert.equal(expiredTokenErr.isInvalidResetToken(), false);
+});
+

@@ -82,6 +82,19 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponseData {
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword: string;
+}
+
 // Códigos estáveis de erro conhecidos
 export const ApiErrorCodes = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -92,6 +105,8 @@ export const ApiErrorCodes = {
   ACCESS_DENIED: 'ACCESS_DENIED',
   REAUTHENTICATION_FAILED: 'REAUTHENTICATION_FAILED',
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  INVALID_RESET_TOKEN: 'INVALID_RESET_TOKEN',
+  RESET_TOKEN_EXPIRED: 'RESET_TOKEN_EXPIRED',
   RATE_LIMITED: 'RATE_LIMITED',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR',

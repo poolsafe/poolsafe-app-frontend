@@ -54,3 +54,43 @@ export const registerSchema = z
   });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Informe seu e-mail.')
+    .email('Informe um e-mail válido.')
+    .max(254, 'O e-mail deve ter no máximo 254 caracteres.'),
+});
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    token: z
+      .string()
+      .min(1, 'Informe o código de recuperação.')
+      .refine(
+        (val) => {
+          const cleaned = val.replace(/[\s-]/g, '').toUpperCase();
+          return cleaned.length === 8 && /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(cleaned);
+        },
+        {
+          message: 'Informe um código válido com 8 caracteres (ex: XXXX-XXXX).',
+        },
+      ),
+    newPassword: z
+      .string()
+      .min(8, 'A nova senha deve ter no mínimo 8 caracteres.')
+      .max(128, 'A nova senha deve ter no máximo 128 caracteres.'),
+    passwordConfirmation: z
+      .string()
+      .min(1, 'Confirme sua nova senha.'),
+  })
+  .refine((data) => data.newPassword === data.passwordConfirmation, {
+    message: 'A confirmação de senha deve ser idêntica à nova senha.',
+    path: ['passwordConfirmation'],
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

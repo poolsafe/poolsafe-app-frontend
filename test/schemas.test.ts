@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loginSchema, registerSchema } from '../src/schemas/auth.ts';
+import {
+  loginSchema,
+  registerSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../src/schemas/auth.ts';
 
 test('1. Schemas de Login - Validações de e-mail e senha', () => {
   // Caso de sucesso
@@ -114,3 +119,80 @@ test('2. Schemas de Cadastro - Validação de nome, senha e confirmação exclus
     assert.equal(apiPayload.email, 'dan@example.com');
   }
 });
+
+test('3. Schemas de Recuperação de Senha (Fatia 3B) - Validações de e-mail', () => {
+  // Sucesso
+  const valid = forgotPasswordSchema.safeParse({ email: 'usuario@example.com' });
+  assert.equal(valid.success, true);
+
+  // E-mail vazio
+  const empty = forgotPasswordSchema.safeParse({ email: '' });
+  assert.equal(empty.success, false);
+
+  // E-mail inválido
+  const invalid = forgotPasswordSchema.safeParse({ email: 'invalido' });
+  assert.equal(invalid.success, false);
+
+  // E-mail maior que 254 caracteres
+  const tooLong = forgotPasswordSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com` });
+  assert.equal(tooLong.success, false);
+});
+
+test('4. Schemas de Redefinição de Senha (Fatia 3B) - Validação de código e senhas', () => {
+  // Código formatado com hífen válido
+  const validWithHyphen = resetPasswordSchema.safeParse({
+    token: 'AB7K-2P9Q',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'nova-senha-segura',
+  });
+  assert.equal(validWithHyphen.success, true);
+
+  // Código sem hífen válido
+  const validWithoutHyphen = resetPasswordSchema.safeParse({
+    token: 'AB7K2P9Q',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'nova-senha-segura',
+  });
+  assert.equal(validWithoutHyphen.success, true);
+
+  // Código minúsculo aceito pelo schema
+  const validLowercase = resetPasswordSchema.safeParse({
+    token: 'ab7k-2p9q',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'nova-senha-segura',
+  });
+  assert.equal(validLowercase.success, true);
+
+  // Código com caractere ambíguo proibido (ex: zero '0' ou 'O')
+  const invalidChar = resetPasswordSchema.safeParse({
+    token: 'AB7K-2P90',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'nova-senha-segura',
+  });
+  assert.equal(invalidChar.success, false);
+
+  // Código com tamanho diferente de 8 caracteres úteis
+  const shortCode = resetPasswordSchema.safeParse({
+    token: 'AB7K-2P',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'nova-senha-segura',
+  });
+  assert.equal(shortCode.success, false);
+
+  // Senha menor que 8 caracteres
+  const shortPass = resetPasswordSchema.safeParse({
+    token: 'AB7K-2P9Q',
+    newPassword: '1234567',
+    passwordConfirmation: '1234567',
+  });
+  assert.equal(shortPass.success, false);
+
+  // Confirmação divergente
+  const mismatch = resetPasswordSchema.safeParse({
+    token: 'AB7K-2P9Q',
+    newPassword: 'nova-senha-segura',
+    passwordConfirmation: 'outra-senha',
+  });
+  assert.equal(mismatch.success, false);
+});
+

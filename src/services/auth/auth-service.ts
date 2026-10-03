@@ -9,6 +9,8 @@ import type {
   UserProfileResponseData,
   UpdateProfilePayload,
   ChangePasswordPayload,
+  ForgotPasswordResponseData,
+  ResetPasswordPayload,
 } from '../api/types.ts';
 import { clearSession, loadSession, saveSession } from './secure-storage.ts';
 import { refreshCoordinator, RefreshCoordinator } from './refresh-coordinator.ts';
@@ -51,6 +53,18 @@ export class AuthService {
       }
     }
     await clearSession();
+  }
+
+  public async forgotPassword(email: string): Promise<ForgotPasswordResponseData> {
+    const response = await this.client.post<ForgotPasswordResponseData>(
+      '/auth/forgot-password',
+      { email },
+    );
+    return response.data;
+  }
+
+  public async resetPassword(payload: ResetPasswordPayload): Promise<void> {
+    await this.client.postNoContent('/auth/reset-password', payload);
   }
 
   public async getProfile(accessToken: string): Promise<AuthUser> {
