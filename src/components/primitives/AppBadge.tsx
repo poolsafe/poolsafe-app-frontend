@@ -13,6 +13,7 @@ export interface AppBadgeProps {
   variant?: BadgeVariant;
   icon?: FeatherIconName;
   style?: ViewStyle;
+  testID?: string;
 }
 
 /**
@@ -26,6 +27,7 @@ export function AppBadge({
   variant = 'info',
   icon,
   style,
+  testID,
 }: AppBadgeProps) {
   const { colors } = useTheme();
 
@@ -64,6 +66,7 @@ export function AppBadge({
 
   return (
     <View
+      testID={testID}
       accessible={true}
       accessibilityRole="text"
       accessibilityLabel={`Status: ${label}`}

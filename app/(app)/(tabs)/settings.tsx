@@ -21,6 +21,7 @@ import { AppButton } from '@/components/primitives/AppButton';
 import { AppBadge } from '@/components/primitives/AppBadge';
 import { AppBanner } from '@/components/primitives/AppBanner';
 import { AppDivider } from '@/components/primitives/AppDivider';
+import { AlertReadinessSection } from '@/components/domain/AlertReadinessSection';
 import { spacing, radius } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 import { useAuth } from '@/providers/AuthContext';
@@ -423,7 +424,10 @@ export default function SettingsScreen() {
             </View>
           </AppCard>
 
-          {/* Card 3: Sessão e Saída */}
+          {/* Card 3: Notificações e Prontidão Android (Fatia 8A) */}
+          <AlertReadinessSection />
+
+          {/* Card 4: Sessão e Saída */}
           <AppCard variant="raised" style={styles.card}>
             <AppText variant="heading3" style={styles.sectionTitle}>
               Sessão

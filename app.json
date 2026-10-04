@@ -18,7 +18,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.poolsafeapp"
+      "package": "com.anonymous.poolsafeapp",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.ACCESS_NOTIFICATION_POLICY"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -26,7 +31,17 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#00e5ff",
+          "sounds": [
+            "./assets/sounds/poolsafe_alert_provisional.wav"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
