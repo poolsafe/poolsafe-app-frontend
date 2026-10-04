@@ -5,6 +5,7 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 
 import { AppBackground } from '@/components/layout/AppBackground';
@@ -68,7 +69,7 @@ function getMonitoringDisplay(
 ) {
   if (status === 'DEGRADADO' && reason === 'SESSIONS_MIXED') {
     return {
-      badgeVariant: 'success' as const,
+      badgeVariant: 'warning' as const,
       badgeLabel: 'PARCIAL',
       title: 'Proteção parcial',
       description:
@@ -76,7 +77,7 @@ function getMonitoringDisplay(
           ? 'Vigilância ativa com 1 sessão pausada.'
           : `Vigilância ativa com ${pausedSessions} sessões pausadas.`,
       icon: 'activity' as FeatherIconName,
-      borderColor: colors.success,
+      borderColor: colors.warning,
     };
   }
 
@@ -439,58 +440,70 @@ export default function HomeScreen() {
 
             {/* 4. Alerta Mais Recente */}
             {data.latestAlert ? (
-              <AppCard
-                variant="default"
-                style={[
-                  styles.sectionCard,
-                  {
-                    borderColor:
-                      data.latestAlert.severity === 'CRITICA'
-                        ? colors.danger
-                        : colors.warning,
-                  },
-                ]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push(`/(app)/alerts/${data.latestAlert!.id}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`Ver detalhes do alerta mais recente: ${data.latestAlert.severity}, câmera ${data.latestAlert.camera.name}`}
               >
-                <View style={styles.cardHeaderRow}>
-                  <View style={styles.sectionHeaderTitle}>
-                    <AppIcon
-                      name="alert-triangle"
-                      size={20}
-                      color={
+                <AppCard
+                  variant="default"
+                  style={[
+                    styles.sectionCard,
+                    {
+                      borderColor:
                         data.latestAlert.severity === 'CRITICA'
                           ? colors.danger
-                          : colors.warning
+                          : colors.warning,
+                    },
+                  ]}
+                >
+                  <View style={styles.cardHeaderRow}>
+                    <View style={styles.sectionHeaderTitle}>
+                      <AppIcon
+                        name="alert-triangle"
+                        size={20}
+                        color={
+                          data.latestAlert.severity === 'CRITICA'
+                            ? colors.danger
+                            : colors.warning
+                        }
+                      />
+                      <AppText variant="heading3" style={styles.headerTitleText}>
+                        Alerta Mais Recente
+                      </AppText>
+                    </View>
+                    <AppBadge
+                      variant={
+                        data.latestAlert.severity === 'CRITICA' ? 'danger' : 'warning'
                       }
+                      label={data.latestAlert.severity}
                     />
-                    <AppText variant="heading3" style={styles.headerTitleText}>
-                      Alerta Mais Recente
-                    </AppText>
                   </View>
-                  <AppBadge
-                    variant={
-                      data.latestAlert.severity === 'CRITICA' ? 'danger' : 'warning'
-                    }
-                    label={data.latestAlert.severity}
-                  />
-                </View>
 
-                <View style={styles.alertBody}>
-                  <AppText variant="bodyStrong">
-                    {data.latestAlert.type === 'POSSIVEL_RISCO'
-                      ? 'Possível Risco Detectado'
-                      : data.latestAlert.type}
-                  </AppText>
-                  <AppText variant="small" colorRole="textSecondary" style={styles.alertCamera}>
-                    {data.latestAlert.camera.name}
-                    {data.latestAlert.camera.location
-                      ? ` • ${data.latestAlert.camera.location}`
-                      : ''}
-                  </AppText>
-                  <AppText variant="caption" colorRole="textMuted">
-                    Detectado em {formatFullDateTime(data.latestAlert.detectedAt)}
-                  </AppText>
-                </View>
-              </AppCard>
+                  <View style={styles.alertBody}>
+                    <AppText variant="bodyStrong">
+                      {data.latestAlert.type === 'POSSIVEL_RISCO'
+                        ? 'Possível Risco Detectado'
+                        : data.latestAlert.type}
+                    </AppText>
+                    <AppText variant="small" colorRole="textSecondary" style={styles.alertCamera}>
+                      {data.latestAlert.camera.name}
+                      {data.latestAlert.camera.location
+                        ? ` • ${data.latestAlert.camera.location}`
+                        : ''}
+                    </AppText>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                      <AppText variant="caption" colorRole="textMuted">
+                        Detectado em {formatFullDateTime(data.latestAlert.detectedAt)}
+                      </AppText>
+                      <AppText variant="caption" style={{ color: colors.primary, fontWeight: '600' }}>
+                        Ver detalhes →
+                      </AppText>
+                    </View>
+                  </View>
+                </AppCard>
+              </TouchableOpacity>
             ) : (
               <AppCard variant="raised" style={styles.sectionCard}>
                 <View style={styles.noAlertRow}>

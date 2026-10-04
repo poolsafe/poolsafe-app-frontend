@@ -5,6 +5,7 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -377,47 +378,54 @@ export default function CameraDetailsScreen() {
                   {data.recentAlerts.map((alert, index) => {
                     const isCritical = alert.severity === 'CRITICA';
                     return (
-                      <View
+                      <TouchableOpacity
                         key={alert.id}
-                        style={[
-                          styles.alertItem,
-                          { backgroundColor: colors.surfaceRaised },
-                          index < data.recentAlerts.length - 1 && styles.alertItemSpacing,
-                        ]}
+                        activeOpacity={0.7}
+                        onPress={() => router.push(`/(app)/alerts/${alert.id}`)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Ver detalhes do alerta ${alert.id}: ${alert.severity}, ${formatAlertTypeName(alert.type)}`}
                       >
-                        <View style={styles.alertItemHeader}>
-                          <AppBadge
-                            variant={isCritical ? 'danger' : 'warning'}
-                            label={alert.severity}
-                            icon={isCritical ? 'alert-octagon' : 'alert-triangle'}
-                          />
-                          <AppText variant="telemetry" colorRole="textMuted">
-                            #{alert.id}
-                          </AppText>
-                        </View>
-
-                        <AppText variant="bodyStrong" style={styles.alertTypeTitle}>
-                          {formatAlertTypeName(alert.type)}
-                        </AppText>
-
-                        <View style={styles.alertMetaRow}>
-                          <View style={styles.alertMetaItem}>
-                            <AppIcon name="clock" size={13} color={colors.textMuted} />
-                            <AppText variant="small" colorRole="textSecondary">
-                              {formatFullDateTime(alert.detectedAt)}
+                        <View
+                          style={[
+                            styles.alertItem,
+                            { backgroundColor: colors.surfaceRaised },
+                            index < data.recentAlerts.length - 1 && styles.alertItemSpacing,
+                          ]}
+                        >
+                          <View style={styles.alertItemHeader}>
+                            <AppBadge
+                              variant={isCritical ? 'danger' : 'warning'}
+                              label={alert.severity}
+                              icon={isCritical ? 'alert-octagon' : 'alert-triangle'}
+                            />
+                            <AppText variant="telemetry" colorRole="textMuted">
+                              #{alert.id}
                             </AppText>
                           </View>
 
-                          <View style={styles.alertMetaItem}>
-                            <AppBadge
-                              variant={alert.evidenceAvailable ? 'info' : 'offline'}
-                              label={alert.evidenceAvailable ? 'EVIDÊNCIA DISPONÍVEL' : 'SEM EVIDÊNCIA'}
-                              icon="image"
-                              style={styles.evidenceBadge}
-                            />
+                          <AppText variant="bodyStrong" style={styles.alertTypeTitle}>
+                            {formatAlertTypeName(alert.type)}
+                          </AppText>
+
+                          <View style={styles.alertMetaRow}>
+                            <View style={styles.alertMetaItem}>
+                              <AppIcon name="clock" size={13} color={colors.textMuted} />
+                              <AppText variant="small" colorRole="textSecondary">
+                                {formatFullDateTime(alert.detectedAt)}
+                              </AppText>
+                            </View>
+
+                            <View style={styles.alertMetaItem}>
+                              <AppBadge
+                                variant={alert.evidenceAvailable ? 'info' : 'offline'}
+                                label={alert.evidenceAvailable ? 'EVIDÊNCIA DISPONÍVEL' : 'SEM EVIDÊNCIA'}
+                                icon="image"
+                                style={styles.evidenceBadge}
+                              />
+                            </View>
                           </View>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
 

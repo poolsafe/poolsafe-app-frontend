@@ -208,3 +208,34 @@ test('5. Lógica de dados desatualizados (stale data): falha de rede preserva da
   // Confirma que a última data conhecida é preservada
   assert.equal(queryState.data.generatedAt, '2026-09-27T08:00:00.000Z');
 });
+
+test('6. Suporte a DEGRADADO com motivo SESSIONS_MIXED e validação de tipos de monitoramento', () => {
+  const mixedData: HomeData = {
+    generatedAt: '2026-10-03T22:00:00.000Z',
+    overallMonitoring: {
+      status: 'DEGRADADO',
+      reason: 'SESSIONS_MIXED',
+      currentSessions: 2,
+      activeSessions: 1,
+      pausedSessions: 1,
+      degradedSessions: 0,
+      unavailableSessions: 0,
+    },
+    cameras: { total: 2, online: 1, offline: 0, unknown: 0, inactive: 1 },
+    latestAlert: null,
+    warnings: [
+      {
+        code: 'MONITORING_PAUSED',
+        severity: 'ATENCAO',
+        monitoringId: '10',
+      },
+    ],
+  };
+
+  assert.equal(mixedData.overallMonitoring.status, 'DEGRADADO');
+  assert.equal(mixedData.overallMonitoring.reason, 'SESSIONS_MIXED');
+  assert.equal(mixedData.overallMonitoring.activeSessions, 1);
+  assert.equal(mixedData.overallMonitoring.pausedSessions, 1);
+  assert.equal(mixedData.warnings.length, 1);
+  assert.equal(mixedData.warnings[0].code, 'MONITORING_PAUSED');
+});

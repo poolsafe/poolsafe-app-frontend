@@ -109,6 +109,8 @@ export const ApiErrorCodes = {
   RESET_TOKEN_EXPIRED: 'RESET_TOKEN_EXPIRED',
   MONITORING_STATE_CONFLICT: 'MONITORING_STATE_CONFLICT',
   CAMERA_NOT_OPERATIONAL: 'CAMERA_NOT_OPERATIONAL',
+  EVIDENCE_NOT_FOUND: 'EVIDENCE_NOT_FOUND',
+  EVIDENCE_UNAVAILABLE: 'EVIDENCE_UNAVAILABLE',
   RATE_LIMITED: 'RATE_LIMITED',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR',
@@ -272,5 +274,60 @@ export interface PauseMonitoringPayload {
 
 export interface EndMonitoringPayload {
   password: string;
+}
+
+// Alertas e Evidências — Fatia 7
+export type AlertSeverity = 'ATENCAO' | 'CRITICA';
+export type EvidenceUnavailableReason = 'NOT_CAPTURED' | 'EXPIRED' | 'REMOVED';
+
+export interface AlertCameraSummary {
+  id: string;
+  name: string;
+  location: string | null;
+}
+
+export interface AlertSummaryItem {
+  id: string;
+  type: string;
+  severity: AlertSeverity;
+  detectedAt: string;
+  camera: AlertCameraSummary;
+  evidenceAvailable: boolean;
+}
+
+export interface AlertsPaginationMeta {
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface AlertsListResponseData {
+  data: AlertSummaryItem[];
+  pagination: AlertsPaginationMeta;
+  meta?: {
+    requestId?: string;
+  };
+}
+
+export interface AlertEvidenceInfo {
+  available: boolean;
+  mimeType: string | null;
+  expiresAt: string | null;
+  unavailableReason: EvidenceUnavailableReason | null;
+}
+
+export interface AlertNotificationInfo {
+  status: string;
+  processedAt: string | null;
+}
+
+export interface AlertDetailItem {
+  id: string;
+  type: string;
+  severity: AlertSeverity;
+  detectedAt: string;
+  camera: AlertCameraSummary;
+  monitoringId: string;
+  evidence: AlertEvidenceInfo;
+  notification: AlertNotificationInfo | null;
 }
 

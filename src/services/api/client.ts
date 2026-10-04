@@ -298,6 +298,63 @@ export class HttpClient {
 
     return this.parseResponse<ApiResponse<T>>(response);
   }
+
+  /**
+   * Executa uma requisição GET para transmissão autorizada de dados binários em memória (ex: evidência).
+   * Não grava em disco nem em caches persistentes.
+   */
+  public async getBinary(
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<{ data: Uint8Array; contentType: string }> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'image/jpeg, image/png, application/problem+json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'GET',
+        headers,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    if (!response.ok) {
+      let problem: ProblemDetails | undefined;
+      try {
+        problem = (await response.json()) as ProblemDetails;
+      } catch {
+        // Ignora erro de parsing JSON
+      }
+
+      if (problem && problem.code) {
+        throw ApiError.fromProblemDetails(problem, response.status);
+      }
+
+      throw new ApiError({
+        status: response.status,
+        code: `HTTP_${response.status}`,
+        title: response.statusText || 'Erro no servidor',
+        detail: 'Falha ao obter conteúdo da API.',
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await response.arrayBuffer();
+
+    return {
+      data: new Uint8Array(arrayBuffer),
+      contentType,
+    };
+  }
 }
 
 export const apiClient = new HttpClient();
