@@ -5,7 +5,11 @@ import { HomeApiService } from '../src/services/api/home-service.ts';
 import { HttpClient } from '../src/services/api/client.ts';
 import { ApiError } from '../src/services/api/errors.ts';
 import { ApiErrorCodes } from '../src/services/api/types.ts';
-import type { HomeData } from '../src/services/api/types.ts';
+import type { HomeData, HomeWarning } from '../src/services/api/types.ts';
+import {
+  resolveWarningInfo,
+  getUniqueWarnings,
+} from '../src/utils/home-warnings.ts';
 
 test('1. HomeApiService - Consulta GET /home com token Bearer e retorna envelope data', async () => {
   let capturedUrl = '';
@@ -237,5 +241,71 @@ test('6. Suporte a DEGRADADO com motivo SESSIONS_MIXED e validação de tipos de
   assert.equal(mixedData.overallMonitoring.activeSessions, 1);
   assert.equal(mixedData.overallMonitoring.pausedSessions, 1);
   assert.equal(mixedData.warnings.length, 1);
-  assert.equal(mixedData.warnings[0].code, 'MONITORING_PAUSED');
+  assert.equal(mixedData.warnings[0]?.code, 'MONITORING_PAUSED');
+});
+
+test('7. getUniqueWarnings consolida múltiplos avisos por tipo mantendo apenas 1 aviso por código', () => {
+  const duplicateWarnings: HomeWarning[] = [
+    { code: 'MONITORING_PAUSED', severity: 'ATENCAO', monitoringId: '1' },
+    { code: 'CAMERA_OFFLINE', severity: 'ATENCAO', cameraId: '10' },
+    { code: 'CAMERA_OFFLINE', severity: 'ATENCAO', cameraId: '11' },
+    { code: 'CAMERA_UNKNOWN', severity: 'ATENCAO', cameraId: '12' },
+    { code: 'CAMERA_OFFLINE', severity: 'ATENCAO', cameraId: '13' },
+    { code: 'CAMERA_OFFLINE', severity: 'ATENCAO', cameraId: '14' },
+    { code: 'CAMERA_OFFLINE', severity: 'ATENCAO', cameraId: '15' },
+  ];
+
+  const unique = getUniqueWarnings(duplicateWarnings);
+
+  assert.equal(unique.length, 3);
+  assert.deepEqual(
+    unique.map((w) => w.code),
+    ['MONITORING_PAUSED', 'CAMERA_OFFLINE', 'CAMERA_UNKNOWN'],
+  );
+  // Preserva os dados do primeiro aviso encontrado de cada tipo
+  assert.equal(unique[1]?.cameraId, '10');
+});
+
+test('8. resolveWarningInfo formata mensagens com texto no plural para avisos de câmeras', () => {
+  const offlineInfo = resolveWarningInfo({
+    code: 'CAMERA_OFFLINE',
+    severity: 'ATENCAO',
+  });
+  assert.equal(offlineInfo.title, 'Câmera sem sinal');
+  assert.equal(
+    offlineInfo.message,
+    'Uma ou mais câmeras associadas à sua conta estão sem comunicação recente há mais de 90 segundos.',
+  );
+  assert.equal(offlineInfo.variant, 'warning');
+
+  const unknownInfo = resolveWarningInfo({
+    code: 'CAMERA_UNKNOWN',
+    severity: 'ATENCAO',
+  });
+  assert.equal(unknownInfo.title, 'Câmera em verificação');
+  assert.equal(
+    unknownInfo.message,
+    'Uma ou mais câmeras associadas ainda não estabeleceram comunicação inicial confirmada.',
+  );
+  assert.equal(unknownInfo.variant, 'info');
+
+  const pausedInfo = resolveWarningInfo({
+    code: 'MONITORING_PAUSED',
+    severity: 'ATENCAO',
+  });
+  assert.equal(pausedInfo.title, 'Sessão pausada');
+  assert.equal(
+    pausedInfo.message,
+    'Existe uma sessão de monitoramento pausada. A vigilância automática está suspensa.',
+  );
+
+  const noMonitoringInfo = resolveWarningInfo({
+    code: 'NO_CURRENT_MONITORING',
+    severity: 'ATENCAO',
+  });
+  assert.equal(noMonitoringInfo.title, 'Sem monitoramento ativo');
+  assert.equal(
+    noMonitoringInfo.message,
+    'Não há nenhuma sessão de monitoramento em execução para suas câmeras no momento.',
+  );
 });

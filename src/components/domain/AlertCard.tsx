@@ -57,7 +57,6 @@ export function AlertCard({ alert, onPress, style }: AlertCardProps) {
         style={[
           styles.card,
           {
-            borderColor: isCritical ? colors.danger : colors.warning,
             backgroundColor: colors.surface,
           },
         ]}

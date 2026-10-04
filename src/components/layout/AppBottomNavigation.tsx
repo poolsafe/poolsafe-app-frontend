@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Pressable, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
 import type { Tabs } from 'expo-router';
@@ -25,12 +25,217 @@ const TAB_FALLBACK_LABELS: Record<string, string> = {
   settings: 'Definições',
 };
 
+const useNativeDriver = Platform.OS !== 'web';
+
+interface NavigationTabItemProps {
+  route: AppBottomTabBarProps['state']['routes'][number];
+  descriptor: AppBottomTabBarProps['descriptors'][string];
+  isFocused: boolean;
+  activeColor: string;
+  inactiveColor: string;
+  isDark: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}
+
+/**
+ * Item individual da aba com micro-interações táteis e animações nativas de alto desempenho.
+ */
+function NavigationTabItem({
+  route,
+  descriptor,
+  isFocused,
+  activeColor,
+  inactiveColor,
+  isDark,
+  onPress,
+  onLongPress,
+}: NavigationTabItemProps) {
+  const { options } = descriptor;
+
+  const label =
+    typeof options.tabBarLabel === 'string'
+      ? options.tabBarLabel
+      : options.title !== undefined
+        ? options.title
+        : TAB_FALLBACK_LABELS[route.name] || route.name;
+
+  const iconName = TAB_ICONS[route.name] || 'circle';
+  const currentColor = isFocused ? activeColor : inactiveColor;
+
+  // Valores animados no UI Thread nativo (60/120 FPS sem travar o JS thread)
+  const pressScale = useRef(new Animated.Value(1)).current;
+  const pressOpacity = useRef(new Animated.Value(1)).current;
+  const focusAnim = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
+
+  // Animação de transição da aba selecionada (expansão da barra e pop do ícone)
+  useEffect(() => {
+    if (isFocused) {
+      Animated.spring(focusAnim, {
+        toValue: 1,
+        friction: 7,
+        tension: 140,
+        useNativeDriver,
+      }).start();
+    } else {
+      Animated.timing(focusAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver,
+      }).start();
+    }
+  }, [isFocused, focusAnim]);
+
+  // Feedback tátil imediato ao pressionar (scale down rápido e rebote elástico ao soltar)
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(pressScale, {
+        toValue: 0.90,
+        speed: 50,
+        bounciness: 0,
+        useNativeDriver,
+      }),
+      Animated.timing(pressOpacity, {
+        toValue: 0.82,
+        duration: 70,
+        useNativeDriver,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(pressScale, {
+        toValue: 1,
+        speed: 22,
+        bounciness: 8,
+        useNativeDriver,
+      }),
+      Animated.timing(pressOpacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver,
+      }),
+    ]).start();
+  };
+
+  const podScale = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.05],
+  });
+
+  const indicatorScaleX = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.15, 1],
+  });
+
+  const indicatorOpacity = focusAnim.interpolate({
+    inputRange: [0, 0.1, 1],
+    outputRange: [0, 0.5, 1],
+  });
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      accessibilityLabel={options.tabBarAccessibilityLabel || `Aba ${label}`}
+      accessibilityHint={
+        isFocused ? 'Aba atualmente selecionada' : `Alterna para a aba ${label}`
+      }
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.tabButton}
+      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+    >
+      <Animated.View
+        style={[
+          styles.tabContent,
+          {
+            transform: [{ scale: pressScale }],
+            opacity: pressOpacity,
+          },
+        ]}
+      >
+        {/* Pod circular ao redor do ícone para o item ativo (estilo Ocean Hero) */}
+        <Animated.View
+          style={[
+            styles.iconPod,
+            {
+              transform: [{ scale: podScale }],
+            },
+            isFocused && {
+              backgroundColor: isDark
+                ? 'rgba(0, 217, 232, 0.14)'
+                : 'rgba(0, 123, 141, 0.10)',
+              borderColor: isDark
+                ? 'rgba(0, 217, 232, 0.45)'
+                : 'rgba(0, 123, 141, 0.30)',
+              borderWidth: 1.5,
+            },
+            isFocused && isDark && styles.podGlowDark,
+            isFocused && !isDark && styles.podGlowLight,
+          ]}
+        >
+          {options.tabBarIcon ? (
+            options.tabBarIcon({
+              focused: isFocused,
+              color: currentColor,
+              size: 22,
+            })
+          ) : (
+            <AppIcon
+              name={iconName}
+              size={22}
+              color={currentColor}
+              decorative={true}
+            />
+          )}
+        </Animated.View>
+
+        {/* Rótulo da aba */}
+        <AppText
+          variant="caption"
+          style={[
+            styles.label,
+            {
+              color: currentColor,
+              fontWeight: isFocused ? '700' : '500',
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </AppText>
+      </Animated.View>
+
+      {/* Traço indicador inferior ciano/teal estendido até o final da seção */}
+      <View style={styles.indicatorContainer}>
+        <Animated.View
+          style={[
+            styles.indicatorBar,
+            {
+              backgroundColor: activeColor,
+              opacity: indicatorOpacity,
+              transform: [{ scaleX: indicatorScaleX }],
+            },
+            isDark ? styles.indicatorGlowDark : styles.indicatorGlowLight,
+          ]}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
 /**
  * Bottom Navigation com estética inspirada no Ocean Hero (aquática, moderna e refinada).
  *
  * Características:
+ * - Micro-animação tátil de toque (spring press feedback) a 60/120 FPS sem sobrecarga de CPU.
  * - Destaque ativo por pod circular com borda e preenchimento translúcido.
- * - Ícone em destaque, tipografia semi-bold e indicador de barra (pill) inferior brilhante.
+ * - Ícone em destaque, tipografia semi-bold e indicador de barra inferior estendido até o final de cada seção.
+ * - Transição fluida de expansão do indicador ao selecionar cada aba.
  * - Versão escura profunda (cyan glow) e versão clara / white luminosa e cristalina.
  * - Itens inativos minimalistas e limpos com alvos de toque generosos (>= 48x48dp).
  * - Integração robusta com a Safe Area inferior (gestures do Android / home bar do iOS).
@@ -64,21 +269,7 @@ export function AppBottomNavigation({
         {state.routes.map((route, index) => {
           const descriptor = descriptors[route.key];
           if (!descriptor) return null;
-          const { options } = descriptor;
           const isFocused = state.index === index;
-
-          const label =
-            typeof options.tabBarLabel === 'string'
-              ? options.tabBarLabel
-              : options.title !== undefined
-              ? options.title
-              : TAB_FALLBACK_LABELS[route.name] || route.name;
-
-          const iconName = TAB_ICONS[route.name] || 'circle';
-
-          const activeColor = colors.primary;
-          const inactiveColor = colors.textMuted;
-          const currentColor = isFocused ? activeColor : inactiveColor;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -100,81 +291,17 @@ export function AppBottomNavigation({
           };
 
           return (
-            <Pressable
+            <NavigationTabItem
               key={route.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={options.tabBarAccessibilityLabel || `Aba ${label}`}
-              accessibilityHint={
-                isFocused ? 'Aba atualmente selecionada' : `Alterna para a aba ${label}`
-              }
+              route={route}
+              descriptor={descriptor}
+              isFocused={isFocused}
+              activeColor={colors.primary}
+              inactiveColor={colors.textMuted}
+              isDark={isDark}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={({ pressed }) => [
-                styles.tabButton,
-                pressed && styles.tabButtonPressed,
-              ]}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-            >
-              {/* Pod circular ao redor do ícone para o item ativo (estilo Ocean Hero) */}
-              <View
-                style={[
-                  styles.iconPod,
-                  isFocused && {
-                    backgroundColor: isDark
-                      ? 'rgba(0, 217, 232, 0.14)'
-                      : 'rgba(0, 123, 141, 0.10)',
-                    borderColor: isDark
-                      ? 'rgba(0, 217, 232, 0.45)'
-                      : 'rgba(0, 123, 141, 0.30)',
-                    borderWidth: 1.5,
-                  },
-                  isFocused && isDark && styles.podGlowDark,
-                  isFocused && !isDark && styles.podGlowLight,
-                ]}
-              >
-                {options.tabBarIcon ? (
-                  options.tabBarIcon({
-                    focused: isFocused,
-                    color: currentColor,
-                    size: 22,
-                  })
-                ) : (
-                  <AppIcon
-                    name={iconName}
-                    size={22}
-                    color={currentColor}
-                    decorative={true}
-                  />
-                )}
-              </View>
-
-              {/* Rótulo da aba */}
-              <AppText
-                variant="caption"
-                style={[
-                  styles.label,
-                  {
-                    color: currentColor,
-                    fontWeight: isFocused ? '700' : '500',
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {label}
-              </AppText>
-
-              {/* Traço indicador inferior ciano/teal para a aba ativa (Ocean Hero style) */}
-              <View
-                style={[
-                  styles.indicatorPill,
-                  {
-                    backgroundColor: isFocused ? activeColor : 'transparent',
-                  },
-                  isFocused && isDark && styles.indicatorGlowDark,
-                ]}
-              />
-            </Pressable>
+            />
           );
         })}
       </View>
@@ -213,9 +340,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingVertical: 2,
   },
-  tabButtonPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
+  tabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   iconPod: {
     width: 44,
@@ -246,16 +374,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 1,
   },
-  indicatorPill: {
-    width: 14,
-    height: 2.5,
+  indicatorContainer: {
+    width: '100%',
+    height: 3,
+    marginTop: 6,
+    paddingHorizontal: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indicatorBar: {
+    width: '50%',
+    height: 3,
     borderRadius: radius.full,
-    marginTop: 4,
   },
   indicatorGlowDark: {
     shadowColor: '#00D9E8',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
+  },
+  indicatorGlowLight: {
+    shadowColor: '#007B8D',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
   },
 });

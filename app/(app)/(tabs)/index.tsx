@@ -31,6 +31,7 @@ import type {
   OverallMonitoringReason,
   HomeWarning,
 } from '@/services/api/types';
+import { resolveWarningInfo, getUniqueWarnings } from '@/utils/home-warnings';
 
 function formatTimestamp(isoString?: string): string {
   if (!isoString) return '--:--:--';
@@ -128,48 +129,6 @@ function getMonitoringDisplay(
   }
 }
 
-function resolveWarningInfo(warning: HomeWarning): {
-  title: string;
-  message: string;
-  variant: 'warning' | 'info' | 'danger';
-} {
-  switch (warning.code) {
-    case 'NO_CURRENT_MONITORING':
-      return {
-        title: 'Sem monitoramento ativo',
-        message:
-          'Não há nenhuma sessão de monitoramento em execução para suas câmeras no momento.',
-        variant: 'info',
-      };
-    case 'MONITORING_PAUSED':
-      return {
-        title: 'Sessão pausada',
-        message:
-          'Existe uma sessão de monitoramento pausada. A vigilância automática está suspensa.',
-        variant: 'warning',
-      };
-    case 'CAMERA_OFFLINE':
-      return {
-        title: 'Câmera sem sinal',
-        message:
-          'Uma câmera associada à sua conta está sem comunicação recente há mais de 90 segundos.',
-        variant: 'warning',
-      };
-    case 'CAMERA_UNKNOWN':
-      return {
-        title: 'Câmera em verificação',
-        message:
-          'Uma câmera associada ainda não estabeleceu comunicação inicial confirmada.',
-        variant: 'info',
-      };
-    default:
-      return {
-        title: 'Aviso operacional',
-        message: 'Existe uma pendência operacional identificada pelo sistema.',
-        variant: 'warning',
-      };
-  }
-}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -420,23 +379,28 @@ export default function HomeScreen() {
               )}
             </AppCard>
 
-            {/* 3. Avisos Operacionais */}
-            {data.warnings.length > 0 && (
-              <View style={styles.warningsContainer}>
-                {data.warnings.map((warning, index) => {
-                  const info = resolveWarningInfo(warning);
-                  return (
-                    <AppBanner
-                      key={`warning-${warning.code}-${index}`}
-                      variant={info.variant}
-                      title={info.title}
-                      message={info.message}
-                      style={styles.warningItem}
-                    />
-                  );
-                })}
-              </View>
-            )}
+            {/* 3. Avisos Operacionais (mantém no máximo 1 aviso por tipo) */}
+            {data.warnings.length > 0 && (() => {
+              const uniqueWarnings = getUniqueWarnings(data.warnings);
+              if (uniqueWarnings.length === 0) return null;
+
+              return (
+                <View style={styles.warningsContainer}>
+                  {uniqueWarnings.map((warning, index) => {
+                    const info = resolveWarningInfo(warning);
+                    return (
+                      <AppBanner
+                        key={`warning-${warning.code}-${index}`}
+                        variant={info.variant}
+                        title={info.title}
+                        message={info.message}
+                        style={styles.warningItem}
+                      />
+                    );
+                  })}
+                </View>
+              );
+            })()}
 
             {/* 4. Alerta Mais Recente */}
             {data.latestAlert ? (
@@ -450,12 +414,6 @@ export default function HomeScreen() {
                   variant="default"
                   style={[
                     styles.sectionCard,
-                    {
-                      borderColor:
-                        data.latestAlert.severity === 'CRITICA'
-                          ? colors.danger
-                          : colors.warning,
-                    },
                   ]}
                 >
                   <View style={styles.cardHeaderRow}>
