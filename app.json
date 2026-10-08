@@ -22,7 +22,9 @@
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
-        "android.permission.ACCESS_NOTIFICATION_POLICY"
+        "android.permission.ACCESS_NOTIFICATION_POLICY",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {

@@ -1,0 +1,40 @@
+-- Merging decision tree log ---
+manifest
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-13:12
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-13:12
+	package
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:11-69
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:3-75
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:20-72
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:3-90
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:20-87
+uses-permission#android.permission.VIBRATE
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:3-64
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:20-61
+application
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:6:3-12:17
+service#expo.modules.criticalalarm.CriticalAlarmForegroundService
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:7:5-11:57
+	android:enabled
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:9:9-31
+	android:exported
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:10:9-33
+	android:foregroundServiceType
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:11:9-54
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:8:9-81
+uses-sdk
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml

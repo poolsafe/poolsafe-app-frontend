@@ -34,6 +34,8 @@ export interface NotificationsDriver {
   getPermissionsAsync?: () => Promise<{ granted: boolean; status: string; canAskAgain: boolean }>;
   requestPermissionsAsync?: (request?: unknown) => Promise<{ granted: boolean; status: string; canAskAgain: boolean }>;
   scheduleNotificationAsync?: (request: unknown) => Promise<string>;
+  dismissNotificationAsync?: (identifier: string) => Promise<void>;
+  dismissAllNotificationsAsync?: () => Promise<void>;
   AndroidImportance?: Record<string, number>;
   AndroidAudioUsage?: Record<string, number>;
   AndroidAudioContentType?: Record<string, number>;
@@ -48,8 +50,20 @@ export interface PlatformLinkingDriver {
   getApplicationId?: () => string | null;
 }
 
+export interface CriticalAlarmDriver {
+  startAlarmAsync: () => Promise<boolean>;
+  stopAlarmAsync: () => Promise<boolean>;
+  isAlarmActive: () => boolean;
+  isIgnoringBatteryOptimizations?: () => boolean;
+  openBatteryOptimizationSettingsAsync?: () => Promise<boolean>;
+  addListener?: (
+    listener: (event: { isActive: boolean; reason?: string }) => void,
+  ) => { remove: () => void };
+}
+
 let activeNotificationsDriver: NotificationsDriver | null = null;
 let activePlatformLinkingDriver: PlatformLinkingDriver | null = null;
+let activeCriticalAlarmDriver: CriticalAlarmDriver | null = null;
 
 function getNotificationsDriver(): NotificationsDriver {
   if (!activeNotificationsDriver) {
@@ -85,12 +99,45 @@ function getPlatformLinkingDriver(): PlatformLinkingDriver {
   return activePlatformLinkingDriver;
 }
 
+function getCriticalAlarmDriver(): CriticalAlarmDriver {
+  if (!activeCriticalAlarmDriver) {
+    try {
+      // Import dinâmico do módulo local poolsafe-critical-alarm
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require('../../../modules/poolsafe-critical-alarm/src/index.ts');
+      activeCriticalAlarmDriver = {
+        startAlarmAsync: () => mod.startCriticalAlarmAsync(),
+        stopAlarmAsync: () => mod.stopCriticalAlarmAsync(),
+        isAlarmActive: () => mod.isCriticalAlarmActive(),
+        isIgnoringBatteryOptimizations: () => mod.isIgnoringBatteryOptimizations?.() ?? false,
+        openBatteryOptimizationSettingsAsync: () =>
+          mod.openBatteryOptimizationSettingsAsync?.() ?? Promise.resolve(false),
+        addListener: (listener) => mod.addCriticalAlarmListener?.(listener) ?? { remove: () => {} },
+      };
+    } catch {
+      activeCriticalAlarmDriver = {
+        startAlarmAsync: async () => false,
+        stopAlarmAsync: async () => true,
+        isAlarmActive: () => false,
+        isIgnoringBatteryOptimizations: () => false,
+        openBatteryOptimizationSettingsAsync: async () => false,
+        addListener: () => ({ remove: () => {} }),
+      };
+    }
+  }
+  return activeCriticalAlarmDriver;
+}
+
 export function setNotificationsDriver(driver: NotificationsDriver | null): void {
   activeNotificationsDriver = driver;
 }
 
 export function setPlatformLinkingDriver(driver: PlatformLinkingDriver | null): void {
   activePlatformLinkingDriver = driver;
+}
+
+export function setCriticalAlarmDriver(driver: CriticalAlarmDriver | null): void {
+  activeCriticalAlarmDriver = driver;
 }
 
 /**
@@ -131,17 +178,22 @@ function resolveApplicationId(customPlatform?: PlatformLinkingDriver): string | 
 export class NotificationsService {
   private customDriver?: NotificationsDriver;
   private customPlatformDriver?: PlatformLinkingDriver;
+  private customCriticalAlarmDriver?: CriticalAlarmDriver;
   private channelInitialized = false;
 
   constructor(
     customNotificationsDriver?: NotificationsDriver,
     customPlatformDriver?: PlatformLinkingDriver,
+    customCriticalAlarmDriver?: CriticalAlarmDriver,
   ) {
     if (customNotificationsDriver) {
       this.customDriver = customNotificationsDriver;
     }
     if (customPlatformDriver) {
       this.customPlatformDriver = customPlatformDriver;
+    }
+    if (customCriticalAlarmDriver) {
+      this.customCriticalAlarmDriver = customCriticalAlarmDriver;
     }
 
     this.initForegroundHandler();
@@ -153,6 +205,10 @@ export class NotificationsService {
 
   private get platform(): PlatformLinkingDriver {
     return this.customPlatformDriver || getPlatformLinkingDriver();
+  }
+
+  private get criticalAlarm(): CriticalAlarmDriver {
+    return this.customCriticalAlarmDriver || getCriticalAlarmDriver();
   }
 
   /**
@@ -373,9 +429,16 @@ export class NotificationsService {
       // 2. Consulta novamente o canal para capturar a configuração efetiva do SO
       const channel = await this.getCriticalChannelAsync();
 
+      const isIgnoringBattery =
+        this.platform.OS === 'android' ? this.isIgnoringBatteryOptimizations() : null;
+
+      const isAlarmActive = this.isCriticalAlarmActive();
+
       // 3. Recalcula a prontidão estritamente após a re-consulta
       return evaluateAlertReadiness(permission, channel, {
         isAndroid: this.platform.OS === 'android',
+        isIgnoringBatteryOptimizations: isIgnoringBattery,
+        isCriticalAlarmActive: isAlarmActive,
       });
     } catch (err: unknown) {
       // Contingência sem quebrar a tela de Definições
@@ -447,6 +510,34 @@ export class NotificationsService {
   }
 
   /**
+   * Descarta uma notificação específica pelo identificador.
+   */
+  async dismissNotificationAsync(identifier: string): Promise<void> {
+    try {
+      const driver = this.driver;
+      if (driver.dismissNotificationAsync) {
+        await driver.dismissNotificationAsync(identifier);
+      }
+    } catch {
+      // Silencia falha de descarte
+    }
+  }
+
+  /**
+   * Descarta todas as notificações ativas do aplicativo.
+   */
+  async dismissAllNotificationsAsync(): Promise<void> {
+    try {
+      const driver = this.driver;
+      if (driver.dismissAllNotificationsAsync) {
+        await driver.dismissAllNotificationsAsync();
+      }
+    } catch {
+      // Silencia falha de descarte
+    }
+  }
+
+  /**
    * Abre as configurações gerais de notificação do aplicativo no Android.
    * Se o package name não puder ser determinado dinamicamente, usa Linking.openSettings() como fallback genérico.
    */
@@ -515,6 +606,72 @@ export class NotificationsService {
       await this.platform.openSettings();
     }
   }
+
+  /**
+   * Inicia o teste da prova nativa de alarme crítico via Foreground Service (Fatia 8A.1).
+   */
+  async startCriticalAlarmAsync(): Promise<boolean> {
+    return await this.criticalAlarm.startAlarmAsync();
+  }
+
+  /**
+   * Interrompe o alarme crítico em execução e libera todos os recursos nativos.
+   */
+  async stopCriticalAlarmAsync(): Promise<boolean> {
+    return await this.criticalAlarm.stopAlarmAsync();
+  }
+
+  /**
+   * Consulta se o alarme crítico está ativo no momento.
+   */
+  isCriticalAlarmActive(): boolean {
+    return this.criticalAlarm.isAlarmActive();
+  }
+
+  /**
+   * Consulta se o app está isento das otimizações de bateria no Android (escopo opcional).
+   */
+  isIgnoringBatteryOptimizations(): boolean {
+    return this.criticalAlarm.isIgnoringBatteryOptimizations?.() ?? false;
+  }
+
+  /**
+   * Abre a tela do sistema de otimizações de bateria no Android (escopo opcional).
+   */
+  async openBatteryOptimizationSettings(): Promise<void> {
+    if (this.criticalAlarm.openBatteryOptimizationSettingsAsync) {
+      try {
+        const opened = await this.criticalAlarm.openBatteryOptimizationSettingsAsync();
+        if (opened) return;
+      } catch {
+        // Fallback
+      }
+    }
+
+    if (this.platform.OS === 'android' && this.platform.sendIntent) {
+      try {
+        await this.platform.sendIntent('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS');
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+    if (this.platform.openSettings) {
+      await this.platform.openSettings();
+    }
+  }
+
+  /**
+   * Adiciona um ouvinte para alterações de estado do alarme crítico nativo.
+   */
+  addCriticalAlarmListener(
+    listener: (event: { isActive: boolean; reason?: string }) => void,
+  ): { remove: () => void } {
+    return this.criticalAlarm.addListener
+      ? this.criticalAlarm.addListener(listener)
+      : { remove: () => {} };
+  }
 }
 
 export const notificationsService = new NotificationsService();
+

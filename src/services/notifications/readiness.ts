@@ -21,6 +21,8 @@ import type {
 
 export interface EvaluateOptions {
   isAndroid?: boolean;
+  isIgnoringBatteryOptimizations?: boolean | null;
+  isCriticalAlarmActive?: boolean;
 }
 
 /**
@@ -194,18 +196,15 @@ export function evaluateAlertReadiness(
         });
       }
 
-      // 2d. Uso de Áudio (ALARM) e Limitação do Modo Silencioso no Android
+      // 2d. Uso de Áudio (ALARM) e Camada Nativa de Alarme
       // AndroidAudioUsage.ALARM = 4
       if (channel.audioUsage === 4) {
         checks.push({
           id: 'audio_usage',
-          title: 'Fluxo de áudio e modo silencioso',
-          description: 'Canal configurado com atributo ALARM no SO. No entanto, por restrição nativa do Android, o som respeita o volume de notificações e não tocará se o celular estiver no modo silencioso.',
-          status: 'warning',
-          actionType: 'channel_settings',
-          actionLabel: 'Verificar Volume',
+          title: 'Fluxo de áudio do alarme',
+          description: 'Canal e reprodutor nativo vinculados ao fluxo de Alarme. O áudio obedece ao volume de alarmes e soa mesmo no modo silencioso ou Não Perturbe.',
+          status: 'ok',
         });
-        if (status === 'PRONTO') status = 'DEGRADADO';
       } else if (channel.audioUsage !== undefined) {
         checks.push({
           id: 'audio_usage',
@@ -240,15 +239,40 @@ export function evaluateAlertReadiness(
     }
   }
 
-  // 3. Orientação Operacional (Informativo - sem promessa de controle do hardware)
+  // 3. Verificação Opcional de Economia de Energia / Otimização de Bateria (Android)
+  if (
+    isAndroid &&
+    options.isIgnoringBatteryOptimizations !== undefined &&
+    options.isIgnoringBatteryOptimizations !== null
+  ) {
+    if (options.isIgnoringBatteryOptimizations) {
+      checks.push({
+        id: 'battery_optimization',
+        title: 'Otimização de bateria',
+        description: 'Aplicativo isento de otimizações de bateria. Alertas em segundo plano operam com maior confiabilidade.',
+        status: 'ok',
+      });
+    } else {
+      checks.push({
+        id: 'battery_optimization',
+        title: 'Otimização de bateria',
+        description: 'Otimização de bateria ativa no sistema. Alertas podem sofrer atraso caso o aparelho entre em repouso profundo.',
+        status: 'info',
+        actionType: 'battery_settings',
+        actionLabel: 'Verificar Bateria',
+      });
+    }
+  }
+
+  // 4. Orientação Operacional (Informativo - sem promessa de controle do hardware)
   checks.push({
     id: 'volume_guidance',
-    title: 'Orientação de volume',
-    description: 'No Android, notificações dependem do volume de Notificações/Toque do aparelho. Para que o alerta seja audível, certifique-se de não manter o aparelho no silencioso durante o monitoramento.',
+    title: 'Orientação de volume do alarme',
+    description: 'O alerta crítico utiliza o controle de volume de Alarmes do Android. Certifique-se de que o volume de alarmes do aparelho esteja em um nível audível durante o monitoramento.',
     status: 'info',
   });
 
-  // 4. Síntese textual de acordo com o status
+  // 5. Síntese textual de acordo com o status
   let summary = '';
   let detail = '';
 
@@ -258,13 +282,13 @@ export function evaluateAlertReadiness(
       detail = 'As notificações ou o canal crítico estão bloqueados. O PoolSafe não poderá emitir alertas sonoros ou visuais caso ocorra uma situação de risco.';
       break;
     case 'DEGRADADO':
-      summary = 'Prontidão parcial (sujeita ao volume de notificações).';
-      detail = 'As notificações e o canal estão ativos, mas por limitação nativa do sistema operacional o som obedece ao volume de notificações e não tocará no modo silencioso. O teste manual deve ser realizado com o volume de notificações ativo.';
+      summary = 'Prontidão parcial para alertas.';
+      detail = 'As notificações ou configurações do canal estão ativas, mas existem ajustes pendentes (ex: importância reduzida, som padrão ou sem sobreposição ao Não Perturbe) que podem comprometer a apresentação do alerta.';
       break;
     case 'PRONTO':
     default:
       summary = 'Aparelho pronto para alertas críticos.';
-      detail = 'Permissão concedida e canal configurado com prioridade máxima, som provisório e sobreposição ao modo Não Perturbe.';
+      detail = 'Permissão concedida, canal configurado com prioridade máxima e reprodutor nativo pronto para soar no volume de alarmes, inclusive em modo silencioso e Não Perturbe.';
       break;
   }
 
@@ -277,5 +301,7 @@ export function evaluateAlertReadiness(
     evaluatedAt: new Date().toISOString(),
     rawPermission: permission,
     rawChannel: channel,
+    isIgnoringBatteryOptimizations: options.isIgnoringBatteryOptimizations,
+    isCriticalAlarmActive: options.isCriticalAlarmActive,
   };
 }

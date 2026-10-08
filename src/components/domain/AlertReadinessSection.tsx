@@ -8,7 +8,7 @@
  * Fatia 8A — Prontidão Android para alertas.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, AppState, AppStateStatus } from 'react-native';
 
 import { AppCard } from '@/components/primitives/AppCard';
@@ -46,8 +46,10 @@ export function AlertReadinessSection({
   const [isLoading, setIsLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [isTestingAlert, setIsTestingAlert] = useState(false);
+  const [isAlarmRunning, setIsAlarmRunning] = useState(false);
   const [testSuccessMessage, setTestSuccessMessage] = useState<string | null>(null);
   const [testErrorMessage, setTestErrorMessage] = useState<string | null>(null);
+  const testNotificationIdRef = useRef<string | null>(null);
 
   const refreshDiagnosis = useCallback(async () => {
     try {
@@ -66,10 +68,40 @@ export function AlertReadinessSection({
     refreshDiagnosis();
   }, [refreshDiagnosis]);
 
-  // Atualiza diagnóstico quando o usuário retorna das configurações do Android (AppState active)
+  // Sincronização em tempo real do estado do alarme via listener nativo
+  useEffect(() => {
+    setIsAlarmRunning(service.isCriticalAlarmActive());
+
+    const subscription = service.addCriticalAlarmListener((event) => {
+      setIsAlarmRunning(event.isActive);
+      if (!event.isActive) {
+        if (testNotificationIdRef.current) {
+          service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+          testNotificationIdRef.current = null;
+        }
+        if (event.reason === 'auto_timeout_30s' || event.reason === 'timeout_30s') {
+          setTestSuccessMessage(
+            'Teste de alarme crítico encerrado automaticamente após 30 segundos.',
+          );
+        } else if (event.reason === 'manual_or_notification_stop') {
+          setTestSuccessMessage('Alarme crítico interrompido com sucesso.');
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+      if (testNotificationIdRef.current) {
+        service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+      }
+    };
+  }, [service]);
+
+  // Atualiza diagnóstico e estado do alarme quando o app volta do segundo plano ou desbloqueio
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
+        setIsAlarmRunning(service.isCriticalAlarmActive());
         refreshDiagnosis();
       }
     });
@@ -77,7 +109,7 @@ export function AlertReadinessSection({
     return () => {
       subscription.remove();
     };
-  }, [refreshDiagnosis]);
+  }, [refreshDiagnosis, service]);
 
   // Ação de solicitar permissão com contexto
   const handleRequestPermission = async () => {
@@ -94,21 +126,40 @@ export function AlertReadinessSection({
     }
   };
 
-  // Ação de testar alerta sonoro local
+  // Ação de iniciar ou interromper o alarme crítico nativo
   const handleTestAlert = async () => {
     setIsTestingAlert(true);
     setTestSuccessMessage(null);
     setTestErrorMessage(null);
     try {
-      await service.sendTestNotificationAsync();
-      setTestSuccessMessage(
-        'Alerta de teste disparado com sucesso! Verifique a notificação e o som no aparelho.',
-      );
+      if (isAlarmRunning) {
+        await service.stopCriticalAlarmAsync();
+        if (testNotificationIdRef.current) {
+          await service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+          testNotificationIdRef.current = null;
+        }
+        setIsAlarmRunning(false);
+        setTestSuccessMessage('Alarme crítico interrompido com sucesso.');
+      } else {
+        await service.startCriticalAlarmAsync();
+        setIsAlarmRunning(true);
+
+        try {
+          const notifId = await service.sendTestNotificationAsync();
+          testNotificationIdRef.current = notifId;
+        } catch {
+          // Ignora caso o disparo visual da notificação falhe
+        }
+
+        setTestSuccessMessage(
+          'Alarme crítico nativo em andamento! Áudio no fluxo de alarme e vibração contínua ativos. Encerra em até 30s ou ao interromper.',
+        );
+      }
     } catch (err: unknown) {
       setTestErrorMessage(
         err instanceof Error
           ? err.message
-          : 'Ocorreu uma falha ao disparar o alerta de teste.',
+          : 'Ocorreu uma falha ao controlar o alarme crítico.',
       );
     } finally {
       setIsTestingAlert(false);
@@ -183,6 +234,9 @@ export function AlertReadinessSection({
       case 'dnd_settings':
         await service.openDndSettings();
         break;
+      case 'battery_settings':
+        await service.openBatteryOptimizationSettings();
+        break;
     }
   };
 
@@ -225,6 +279,16 @@ export function AlertReadinessSection({
       )}
 
       {/* Feedback de Teste */}
+      {isAlarmRunning && (
+        <AppBanner
+          testID="active-alarm-banner"
+          variant="danger"
+          title="Alarme Crítico em Execução"
+          message="Reproduzindo áudio pelo fluxo de alarmes e vibração nativa. O teste encerra em até 30s ou ao tocar em Interromper."
+          style={styles.feedbackBanner}
+        />
+      )}
+
       {testSuccessMessage && (
         <AppBanner
           testID="test-alert-success-banner"
@@ -325,20 +389,20 @@ export function AlertReadinessSection({
           />
         </View>
 
-        {/* Botão Principal: Testar Alerta Sonoro */}
+        {/* Botão Principal: Testar ou Interromper Alarme Crítico Nativo */}
         <AppButton
           testID="btn-test-alert"
-          variant={diagnosis?.status === 'PRONTO' ? 'primary' : 'secondary'}
-          title="Testar alerta sonoro"
-          icon="volume-2"
+          variant={isAlarmRunning ? 'danger' : diagnosis?.status === 'PRONTO' ? 'primary' : 'secondary'}
+          title={isAlarmRunning ? 'Interromper alarme crítico' : 'Testar alarme crítico nativo'}
+          icon={isAlarmRunning ? 'square' : 'volume-2'}
           loading={isTestingAlert}
-          disabled={!diagnosis?.canTest || isLoading}
+          disabled={(!diagnosis?.canTest && !isAlarmRunning) || isLoading}
           fullWidth={true}
           onPress={handleTestAlert}
           style={styles.testAlertButton}
         />
 
-        {!diagnosis?.canTest && (
+        {!diagnosis?.canTest && !isAlarmRunning && (
           <AppText
             variant="small"
             colorRole="textSecondary"

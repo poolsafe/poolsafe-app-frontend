@@ -48,7 +48,7 @@ import type {
 // -----------------------------------------------------------------------------
 // 1. Classificação DEGRADADO sob restrições do SO
 // -----------------------------------------------------------------------------
-test('1. Classificação DEGRADADO - Permissão concedida e canal configurado, mas restrito ao volume de notificações no Android', () => {
+test('1. Classificação PRONTO - Permissão concedida e canal configurado com áudio ALARM e sobreposição DND', () => {
   const permission: NotificationPermissionSummary = {
     granted: true,
     status: 'granted',
@@ -69,9 +69,9 @@ test('1. Classificação DEGRADADO - Permissão concedida e canal configurado, m
 
   const diagnosis = evaluateAlertReadiness(permission, channel, { isAndroid: true });
 
-  assert.equal(diagnosis.status, 'DEGRADADO');
+  assert.equal(diagnosis.status, 'PRONTO');
   assert.equal(diagnosis.canTest, true);
-  assert.match(diagnosis.summary, /Prontidão parcial/);
+  assert.match(diagnosis.summary, /Aparelho pronto/);
 
   // Verifica que todos os itens de verificação principais estão presentes
   const permCheck = diagnosis.checks.find((c) => c.id === 'permission');
@@ -86,7 +86,7 @@ test('1. Classificação DEGRADADO - Permissão concedida e canal configurado, m
   assert.equal(impCheck?.status, 'ok');
   assert.equal(soundCheck?.status, 'ok');
   assert.equal(vibCheck?.status, 'ok');
-  assert.equal(audioCheck?.status, 'warning'); // Reflete que o SO subordina o som ao volume de notificações
+  assert.equal(audioCheck?.status, 'ok'); // Canal e camada nativa vinculados a ALARM
   assert.equal(dndCheck?.status, 'ok');
   assert.equal(volumeCheck?.status, 'info'); // Informativo
 });
@@ -655,6 +655,8 @@ test('12. NotificationsService - Atualização dinâmica do diagnóstico após a
         sound: 'custom',
         bypassDnd: true,
         audioAttributes: { usage: 4, contentType: 4 },
+        enableVibrate: true,
+        vibrationPattern: CRITICAL_VIBRATION_PATTERN,
       };
     },
     async setNotificationChannelAsync(id: string, config: any) {
@@ -681,9 +683,9 @@ test('12. NotificationsService - Atualização dinâmica do diagnóstico após a
 
   // 3. Ao retornar ao app (gatilho de AppState active / useFocusEffect), nova consulta é executada
   const updatedDiagnosis = await service.getDiagnosisAsync();
-  assert.equal(updatedDiagnosis.status, 'DEGRADADO');
+  assert.equal(updatedDiagnosis.status, 'PRONTO');
   assert.equal(updatedDiagnosis.canTest, true);
-  assert.match(updatedDiagnosis.summary, /Prontidão parcial/);
+  assert.match(updatedDiagnosis.summary, /Aparelho pronto/);
 });
 
 // -----------------------------------------------------------------------------
@@ -751,6 +753,8 @@ test('14. Fluxo Pós-Retorno de DND - Reaplica canal idempotentemente, consulta 
         sound: 'custom',
         bypassDnd: true,
         audioAttributes: { usage: 4, contentType: 4 },
+        enableVibrate: true,
+        vibrationPattern: CRITICAL_VIBRATION_PATTERN,
       };
     },
     AndroidImportance: { MAX: 7 },
@@ -773,7 +777,7 @@ test('14. Fluxo Pós-Retorno de DND - Reaplica canal idempotentemente, consulta 
   assert.equal(callSequence[2], `getNotificationChannelAsync:${CRITICAL_ALERT_CHANNEL_ID}`);
 
   // 2. Confirma que a prontidão foi recalculada baseada no resultado atualizado
-  assert.equal(diagnosis.status, 'DEGRADADO');
+  assert.equal(diagnosis.status, 'PRONTO');
   assert.equal(diagnosis.canTest, true);
 });
 

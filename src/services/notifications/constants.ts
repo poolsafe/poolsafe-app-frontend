@@ -46,3 +46,16 @@ export const TEST_NOTIFICATION_TITLE = '[TESTE] Alerta Crítico PoolSafe';
 
 export const TEST_NOTIFICATION_BODY =
   'Teste local de som e vibração do canal crítico. Nenhuma ocorrência detectada.';
+
+/**
+ * Canal exclusivo do Foreground Service da prova nativa (Fatia 8A.1).
+ * Isolado, silencioso e sem vibração, usado apenas para manter o Foreground Service ativo.
+ */
+export const CRITICAL_ALARM_SERVICE_CHANNEL_ID = 'poolsafe_critical_alarm_service_v2';
+export const CRITICAL_ALARM_SERVICE_CHANNEL_NAME = 'Controle de Alarme Crítico';
+
+/**
+ * Tempo máximo de execução automática do teste de alarme crítico em segundos.
+ */
+export const CRITICAL_ALARM_AUTO_TIMEOUT_SECONDS = 30;
+

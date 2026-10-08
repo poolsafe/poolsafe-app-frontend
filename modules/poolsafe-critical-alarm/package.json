@@ -1,0 +1,7 @@
+{
+  "name": "poolsafe-critical-alarm",
+  "version": "1.0.0",
+  "description": "Native critical alarm module for PoolSafe Android",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

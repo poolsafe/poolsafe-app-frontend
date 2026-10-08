@@ -14,7 +14,8 @@ export type ReadinessActionType =
   | 'request_permission'
   | 'app_settings'
   | 'channel_settings'
-  | 'dnd_settings';
+  | 'dnd_settings'
+  | 'battery_settings';
 
 export interface CheckItem {
   id: string;
@@ -52,4 +53,7 @@ export interface AlertReadinessDiagnosis {
   evaluatedAt: string;
   rawPermission?: NotificationPermissionSummary | null;
   rawChannel?: NotificationChannelSummary | null;
+  isIgnoringBatteryOptimizations?: boolean | null;
+  isCriticalAlarmActive?: boolean;
 }
+
