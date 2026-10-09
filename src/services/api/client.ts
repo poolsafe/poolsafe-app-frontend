@@ -299,6 +299,30 @@ export class HttpClient {
     return this.parseResponse<ApiResponse<T>>(response);
   }
 
+  public async deleteNoContent(path: string, options: RequestOptions = {}): Promise<void> {
+    const url = this.buildUrl(path);
+    const headers: Record<string, string> = {
+      Accept: 'application/json, application/problem+json',
+      ...options.headers,
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+
+    const response = await this.execute(
+      url,
+      {
+        method: 'DELETE',
+        headers,
+        signal: options.signal,
+      },
+      options.timeoutMs,
+    );
+
+    await this.parseResponse<void>(response);
+  }
+
   /**
    * Executa uma requisição GET para transmissão autorizada de dados binários em memória (ex: evidência).
    * Não grava em disco nem em caches persistentes.

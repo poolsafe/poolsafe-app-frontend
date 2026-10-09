@@ -5,27 +5,27 @@
 5    <uses-sdk android:minSdkVersion="24" />
 6
 7    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-7-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:3-75
-7-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:20-72
+7-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:3-75
+7-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:20-72
 8    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-8-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:3-90
-8-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:20-87
+8-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:3-90
+8-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:20-87
 9    <uses-permission android:name="android.permission.VIBRATE" />
-9-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:3-64
-9-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:20-61
+9-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:3-64
+9-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:20-61
 10
 11    <application>
-11-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:6:3-12:17
+11-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:6:3-12:17
 12        <service
-12-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:7:5-11:57
+12-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:7:5-11:57
 13            android:name="expo.modules.criticalalarm.CriticalAlarmForegroundService"
-13-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:8:9-81
+13-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:8:9-81
 14            android:enabled="true"
-14-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:9:9-31
+14-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:9:9-31
 15            android:exported="false"
-15-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:10:9-33
+15-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:10:9-33
 16            android:foregroundServiceType="mediaPlayback" />
-16-->P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:11:9-54
+16-->C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:11:9-54
 17    </application>
 18
 19</manifest>

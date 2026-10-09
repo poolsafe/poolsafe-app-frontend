@@ -44,10 +44,14 @@ export class AuthService {
     return response.data;
   }
 
-  public async logout(refreshToken?: string): Promise<void> {
+  public async logout(refreshToken?: string, installationId?: string): Promise<void> {
     if (refreshToken) {
       try {
-        await this.client.postNoContent('/auth/logout', { refreshToken });
+        const payload: { refreshToken: string; installationId?: string } = { refreshToken };
+        if (installationId) {
+          payload.installationId = installationId;
+        }
+        await this.client.postNoContent('/auth/logout', payload);
       } catch {
         // Falha de rede ou indisponibilidade da API não impede o logout local seguro
       }

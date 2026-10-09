@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "83087043477",
+    "project_id": "poolsafe-1f0db",
+    "storage_bucket": "poolsafe-1f0db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83087043477:android:b807f3239816d83734a49c",
+        "android_client_info": {
+          "package_name": "com.anonymous.poolsafeapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCV9xtkyg9znYSn_lSzpsMBgfzkaAHWpg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

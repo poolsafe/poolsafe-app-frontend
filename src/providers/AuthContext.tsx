@@ -11,6 +11,7 @@ import { AuthTokens, AuthUser, LoginPayload, RegisterPayload } from '@/services/
 import { ApiError } from '@/services/api/errors';
 import { authService, AuthService } from '@/services/auth/auth-service';
 import { refreshCoordinator } from '@/services/auth/refresh-coordinator';
+import { deviceSyncService, DeviceSyncService } from '@/services/devices/device-sync-service';
 import { queryClient } from './QueryClientProvider';
 
 export type AuthStatus =
@@ -37,7 +38,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({
   children,
   service = authService,
-}: PropsWithChildren<{ service?: AuthService }>) {
+  deviceSync = deviceSyncService,
+}: PropsWithChildren<{ service?: AuthService; deviceSync?: DeviceSyncService }>) {
   const [status, setStatus] = useState<AuthStatus>('initializing');
   const [user, setUser] = useState<AuthUser | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
@@ -46,12 +48,13 @@ export function AuthProvider({
   // Escuta término definitivo de sessão provocado pelo coordenador de refresh
   useEffect(() => {
     refreshCoordinator.setOnSessionTerminated(() => {
+      deviceSync.teardownPushTokenListener();
       setUser(null);
       setTokens(null);
       setStatus('unauthenticated');
       queryClient.clear();
     });
-  }, []);
+  }, [deviceSync]);
 
   const restore = useCallback(async () => {
     setStatus('initializing');
@@ -63,6 +66,7 @@ export function AuthProvider({
       setUser(result.user);
       setTokens(result.tokens);
       setStatus('authenticated');
+      void deviceSync.syncDeviceAsync(result.tokens);
     } else if (result.status === 'unauthenticated') {
       setUser(null);
       setTokens(null);
@@ -72,7 +76,7 @@ export function AuthProvider({
       setRecoverableError(result.error);
       setStatus('recoverable_failure');
     }
-  }, [service]);
+  }, [service, deviceSync]);
 
   useEffect(() => {
     restore();
@@ -85,8 +89,9 @@ export function AuthProvider({
       setTokens(response.tokens);
       setStatus('authenticated');
       setRecoverableError(null);
+      void deviceSync.syncDeviceAsync(response.tokens);
     },
-    [service],
+    [service, deviceSync],
   );
 
   const register = useCallback(
@@ -96,13 +101,16 @@ export function AuthProvider({
       setTokens(response.tokens);
       setStatus('authenticated');
       setRecoverableError(null);
+      void deviceSync.syncDeviceAsync(response.tokens);
     },
-    [service],
+    [service, deviceSync],
   );
 
   const logout = useCallback(async () => {
     const currentRefreshToken = tokens?.refreshToken;
     try {
+      await deviceSync.unregisterDeviceOnLogoutAsync(currentRefreshToken);
+    } catch {
       await service.logout(currentRefreshToken);
     } finally {
       setUser(null);
@@ -111,7 +119,7 @@ export function AuthProvider({
       setRecoverableError(null);
       queryClient.clear();
     }
-  }, [service, tokens?.refreshToken]);
+  }, [service, deviceSync, tokens?.refreshToken]);
 
   const retryRestore = useCallback(async () => {
     await restore();

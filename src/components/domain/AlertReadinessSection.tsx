@@ -25,6 +25,11 @@ import {
   NotificationsService,
 } from '@/services/notifications/notifications-service.ts';
 import {
+  deviceSyncService,
+  DeviceSyncService,
+  type DeviceRegistrationState,
+} from '@/services/devices/device-sync-service.ts';
+import {
   AlertReadinessDiagnosis,
   AlertReadinessStatus,
   CheckItem,
@@ -33,16 +38,21 @@ import {
 
 export interface AlertReadinessSectionProps {
   service?: NotificationsService;
+  deviceSync?: DeviceSyncService;
   onDiagnosisEvaluated?: (diagnosis: AlertReadinessDiagnosis) => void;
 }
 
 export function AlertReadinessSection({
   service = notificationsService,
+  deviceSync = deviceSyncService,
   onDiagnosisEvaluated,
 }: AlertReadinessSectionProps) {
   const { colors } = useTheme();
 
   const [diagnosis, setDiagnosis] = useState<AlertReadinessDiagnosis | null>(null);
+  const [deviceState, setDeviceState] = useState<DeviceRegistrationState>(
+    deviceSync.getState(),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [isTestingAlert, setIsTestingAlert] = useState(false);
@@ -103,13 +113,22 @@ export function AlertReadinessSection({
       if (nextAppState === 'active') {
         setIsAlarmRunning(service.isCriticalAlarmActive());
         refreshDiagnosis();
+        void deviceSync.syncDeviceAsync();
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [refreshDiagnosis, service]);
+  }, [refreshDiagnosis, service, deviceSync]);
+
+  // Escuta atualizações do registro de dispositivo em tempo real
+  useEffect(() => {
+    const unsubscribe = deviceSync.addStateListener(setDeviceState);
+    return () => {
+      unsubscribe();
+    };
+  }, [deviceSync]);
 
   // Ação de solicitar permissão com contexto
   const handleRequestPermission = async () => {
@@ -119,6 +138,7 @@ export function AlertReadinessSection({
     try {
       await service.requestPermissionsAsync();
       await refreshDiagnosis();
+      void deviceSync.syncDeviceAsync();
     } catch {
       setTestErrorMessage('Não foi possível solicitar a permissão de notificações.');
     } finally {
@@ -355,6 +375,73 @@ export function AlertReadinessSection({
         })}
       </View>
 
+      {/* Bloco de Estado do Dispositivo e Token FCM (Fatia 8B) */}
+      <AppDivider style={styles.deviceDivider} />
+      <View testID="device-sync-status-card" style={styles.deviceStatusContainer}>
+        <View style={styles.deviceStatusHeader}>
+          <View style={styles.deviceStatusTitleRow}>
+            <AppIcon name="smartphone" size={16} color={colors.primary} />
+            <AppText variant="caption" style={styles.deviceStatusTitle}>
+              Dispositivo e Token Push
+            </AppText>
+          </View>
+          <AppBadge
+            testID="device-sync-status-badge"
+            variant={
+              deviceState.status === 'synced'
+                ? 'success'
+                : deviceState.status === 'syncing'
+                ? 'info'
+                : deviceState.status === 'failed'
+                ? 'warning'
+                : 'offline'
+            }
+            label={
+              deviceState.status === 'synced'
+                ? 'Registrado'
+                : deviceState.status === 'syncing'
+                ? 'Sincronizando'
+                : deviceState.status === 'failed'
+                ? 'Pendente'
+                : 'Aguardando'
+            }
+          />
+        </View>
+
+        <AppText variant="small" colorRole="textSecondary" style={styles.deviceStatusDesc}>
+          {deviceState.status === 'synced'
+            ? `Status: ${
+                deviceState.hasFcmToken
+                  ? 'Dispositivo registrado para notificações'
+                  : deviceState.tokenError
+                  ? `Pendente (${deviceState.tokenError})`
+                  : 'Sem token (permissão pendente)'
+              }${
+                deviceState.lastSyncedAt
+                  ? ` • Sincronizado às ${new Date(deviceState.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : ''
+              }`
+            : deviceState.status === 'failed'
+            ? `Tentativa em segundo plano: ${deviceState.error || 'Aguardando conectividade'}`
+            : 'O registro do dispositivo ocorre automaticamente com a sessão.'}
+        </AppText>
+
+        {/* Botão de nova tentativa exibido somente se houver falha de sincronização */}
+        {(deviceState.status === 'failed' || Boolean(deviceState.tokenError)) && (
+          <View style={styles.deviceActionRow}>
+            <AppButton
+              testID="btn-sync-device"
+              variant="secondary"
+              title="Tentar sincronizar novamente"
+              icon="refresh-cw"
+              loading={deviceState.status === 'syncing'}
+              onPress={() => deviceSync.syncDeviceAsync()}
+              style={styles.retrySyncButton}
+            />
+          </View>
+        )}
+      </View>
+
       {/* Ações e Acesso às Configurações Nativas */}
       <View style={styles.nativeActionsGroup}>
         {diagnosis?.status === 'DESATIVADO' &&
@@ -497,5 +584,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     marginTop: spacing[1],
+  },
+  deviceDivider: {
+    marginVertical: spacing[3],
+  },
+  deviceStatusContainer: {
+    padding: spacing[3],
+    borderRadius: radius.medium,
+    backgroundColor: 'rgba(0, 229, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.15)',
+    marginBottom: spacing[4],
+  },
+  deviceStatusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing[1],
+  },
+  deviceStatusTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  deviceStatusTitle: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  deviceStatusDesc: {
+    lineHeight: 18,
+  },
+  deviceActionRow: {
+    marginTop: spacing[3],
+    alignItems: 'flex-start',
+  },
+  retrySyncButton: {
+    minHeight: 32,
+    height: 32,
+    paddingHorizontal: spacing[3],
   },
 });

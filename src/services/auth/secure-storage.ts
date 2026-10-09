@@ -22,7 +22,7 @@ export interface SecureStoreDriver {
 
 let activeDriver: SecureStoreDriver | null = null;
 
-function getDriver(): SecureStoreDriver {
+export function getSecureStoreDriver(): SecureStoreDriver {
   if (!activeDriver) {
     try {
       // Importa dinamicamente expo-secure-store em tempo de execução no app
@@ -33,6 +33,10 @@ function getDriver(): SecureStoreDriver {
     }
   }
   return activeDriver!;
+}
+
+function getDriver(): SecureStoreDriver {
+  return getSecureStoreDriver();
 }
 
 export function setSecureStoreDriver(driver: SecureStoreDriver | null): void {
