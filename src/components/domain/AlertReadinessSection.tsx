@@ -86,7 +86,7 @@ export function AlertReadinessSection({
       setIsAlarmRunning(event.isActive);
       if (!event.isActive) {
         if (testNotificationIdRef.current) {
-          service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+          service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => { });
           testNotificationIdRef.current = null;
         }
         if (event.reason === 'auto_timeout_30s' || event.reason === 'timeout_30s') {
@@ -102,7 +102,7 @@ export function AlertReadinessSection({
     return () => {
       subscription.remove();
       if (testNotificationIdRef.current) {
-        service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+        service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => { });
       }
     };
   }, [service]);
@@ -155,7 +155,7 @@ export function AlertReadinessSection({
       if (isAlarmRunning) {
         await service.stopCriticalAlarmAsync();
         if (testNotificationIdRef.current) {
-          await service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => {});
+          await service.dismissNotificationAsync(testNotificationIdRef.current).catch(() => { });
           testNotificationIdRef.current = null;
         }
         setIsAlarmRunning(false);
@@ -391,39 +391,37 @@ export function AlertReadinessSection({
               deviceState.status === 'synced'
                 ? 'success'
                 : deviceState.status === 'syncing'
-                ? 'info'
-                : deviceState.status === 'failed'
-                ? 'warning'
-                : 'offline'
+                  ? 'info'
+                  : deviceState.status === 'failed'
+                    ? 'warning'
+                    : 'offline'
             }
             label={
               deviceState.status === 'synced'
                 ? 'Registrado'
                 : deviceState.status === 'syncing'
-                ? 'Sincronizando'
-                : deviceState.status === 'failed'
-                ? 'Pendente'
-                : 'Aguardando'
+                  ? 'Sincronizando'
+                  : deviceState.status === 'failed'
+                    ? 'Pendente'
+                    : 'Aguardando'
             }
           />
         </View>
 
         <AppText variant="small" colorRole="textSecondary" style={styles.deviceStatusDesc}>
           {deviceState.status === 'synced'
-            ? `Status: ${
-                deviceState.hasFcmToken
-                  ? 'Dispositivo registrado para notificações'
-                  : deviceState.tokenError
-                  ? `Pendente (${deviceState.tokenError})`
-                  : 'Sem token (permissão pendente)'
-              }${
-                deviceState.lastSyncedAt
-                  ? ` • Sincronizado às ${new Date(deviceState.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : ''
-              }`
+            ? `Status: ${deviceState.hasFcmToken
+              ? 'Dispositivo registrado para notificações'
+              : deviceState.tokenError
+                ? `Pendente (${deviceState.tokenError})`
+                : 'Sem token (permissão pendente)'
+            }${deviceState.lastSyncedAt
+              ? ` • Sincronizado às ${new Date(deviceState.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : ''
+            }`
             : deviceState.status === 'failed'
-            ? `Tentativa em segundo plano: ${deviceState.error || 'Aguardando conectividade'}`
-            : 'O registro do dispositivo ocorre automaticamente com a sessão.'}
+              ? `Tentativa em segundo plano: ${deviceState.error || 'Aguardando conectividade'}`
+              : 'O registro do dispositivo ocorre automaticamente com a sessão.'}
         </AppText>
 
         {/* Botão de nova tentativa exibido somente se houver falha de sincronização */}
@@ -470,7 +468,7 @@ export function AlertReadinessSection({
             testID="btn-open-dnd-settings"
             variant="secondary"
             title="Não Perturbe"
-            icon="shield"
+            icon="moon"
             style={styles.halfButton}
             onPress={() => service.openDndSettings()}
           />
@@ -571,7 +569,7 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   settingsButtonsRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: spacing[2],
   },
   halfButton: {

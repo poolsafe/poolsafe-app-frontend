@@ -139,7 +139,13 @@ export function AppButton({
       {...rest}
     >
       {({ pressed }) => (
+        // collapsable={false}: o estilo pressionado (opacity/transform/background) alterna esta View
+        // entre "achatada" (flattened) e não achatada. No Android/Fabric, se isso ocorrer no mesmo
+        // frame em que a tela está sendo removida (ex.: botão Voltar), o Fabric re-parenta os filhos
+        // enquanto react-native-screens mantém o pai antigo (startViewTransition) e ocorre o crash
+        // "addViewAt: failed to insert view ... already has a parent". Ver react-native-screens#4677.
         <View
+          collapsable={false}
           style={[
             styles.base,
             containerStyle,
@@ -151,13 +157,13 @@ export function AppButton({
           ]}
         >
           {loading ? (
-            <View style={styles.loadingContainer}>
+            <View collapsable={false} style={styles.loadingContainer}>
               <ActivityIndicator color={textColor} size="small" />
             </View>
           ) : (
-            <View style={styles.contentRow}>
+            <View collapsable={false} style={styles.contentRow}>
               {icon && iconPosition === 'left' && (
-                <View style={title ? styles.iconLeft : undefined}>
+                <View collapsable={false} style={title ? styles.iconLeft : undefined}>
                   <AppIcon name={icon} size={isIconButton ? 20 : 18} color={textColor} decorative={true} />
                 </View>
               )}
@@ -174,7 +180,7 @@ export function AppButton({
               ) : null}
 
               {icon && iconPosition === 'right' && (
-                <View style={title ? styles.iconRight : undefined}>
+                <View collapsable={false} style={title ? styles.iconRight : undefined}>
                   <AppIcon name={icon} size={isIconButton ? 20 : 18} color={textColor} decorative={true} />
                 </View>
               )}

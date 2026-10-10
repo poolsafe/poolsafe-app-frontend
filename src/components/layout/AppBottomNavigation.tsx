@@ -7,6 +7,7 @@ import type { Tabs } from 'expo-router';
 export type AppBottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 import { useTheme } from '@/theme/useTheme';
+import { useAlertReadiness } from '@/providers/ReadinessContext';
 import { AppIcon, FeatherIconName } from '@/components/primitives/AppIcon';
 import { AppText } from '@/components/primitives/AppText';
 import { radius, spacing } from '@/theme/tokens';
@@ -34,6 +35,8 @@ interface NavigationTabItemProps {
   activeColor: string;
   inactiveColor: string;
   isDark: boolean;
+  hasBadge?: boolean;
+  badgeColor?: string;
   onPress: () => void;
   onLongPress: () => void;
 }
@@ -48,6 +51,8 @@ function NavigationTabItem({
   activeColor,
   inactiveColor,
   isDark,
+  hasBadge = false,
+  badgeColor,
   onPress,
   onLongPress,
 }: NavigationTabItemProps) {
@@ -138,7 +143,7 @@ function NavigationTabItem({
     <Pressable
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={options.tabBarAccessibilityLabel || `Aba ${label}`}
+      accessibilityLabel={`${options.tabBarAccessibilityLabel || `Aba ${label}`}${hasBadge ? ', pendência de configuração' : ''}`}
       accessibilityHint={
         isFocused ? 'Aba atualmente selecionada' : `Alterna para a aba ${label}`
       }
@@ -149,7 +154,9 @@ function NavigationTabItem({
       style={styles.tabButton}
       hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
     >
+      {/* collapsable={false}: opacity/transform animados no toque alternam o achatamento (ver project-context.md) */}
       <Animated.View
+        collapsable={false}
         style={[
           styles.tabContent,
           {
@@ -160,6 +167,7 @@ function NavigationTabItem({
       >
         {/* Pod circular ao redor do ícone para o item ativo (estilo Ocean Hero) */}
         <Animated.View
+          collapsable={false}
           style={[
             styles.iconPod,
             {
@@ -190,6 +198,19 @@ function NavigationTabItem({
               size={22}
               color={currentColor}
               decorative={true}
+            />
+          )}
+
+          {hasBadge && (
+            <View
+              testID={`tab-badge-${route.name}`}
+              style={[
+                styles.badgeDot,
+                {
+                  backgroundColor: badgeColor || '#EF4444',
+                  borderColor: isDark ? '#051726' : '#FFFFFF',
+                },
+              ]}
             />
           )}
         </Animated.View>
@@ -247,6 +268,7 @@ export function AppBottomNavigation({
   insets,
 }: AppBottomTabBarProps) {
   const { colors, isDark } = useTheme();
+  const { hasPendingReadiness } = useAlertReadiness();
   const safeAreaInsets = useSafeAreaInsets();
 
   // Garante safe area bottom consistente
@@ -270,6 +292,7 @@ export function AppBottomNavigation({
           const descriptor = descriptors[route.key];
           if (!descriptor) return null;
           const isFocused = state.index === index;
+          const hasBadge = route.name === 'settings' && hasPendingReadiness;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -299,6 +322,8 @@ export function AppBottomNavigation({
               activeColor={colors.primary}
               inactiveColor={colors.textMuted}
               isDark={isDark}
+              hasBadge={hasBadge}
+              badgeColor={colors.danger}
               onPress={onPress}
               onLongPress={onLongPress}
             />
@@ -355,6 +380,16 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
     marginBottom: 2,
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 3,
+    right: 6,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    zIndex: 10,
   },
   podGlowDark: {
     shadowColor: '#00D9E8',

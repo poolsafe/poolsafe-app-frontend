@@ -121,6 +121,37 @@ Não crie abstrações ou estado global sem uma necessidade concreta.
   - Contêineres de scroll e estruturais utilizam `removeClippedSubviews={false}` e evitam `overflow: 'hidden'` em hierarquias transitórias para prevenir conflitos no `ReactClippingViewManager` durante transições.
   - Transições do stack raiz e do app stack utilizam `animation: 'none'` para montagem atômica imediata.
 
+### Regra obrigatória: views estáveis ao sair de uma tela (Android/Fabric)
+
+**Sintoma que esta regra previne:** crash nativo ao voltar (seta de voltar, `router.back()`, `replace`, `dismiss`):
+
+```text
+java.lang.IllegalStateException: addViewAt: failed to insert view [N] into parent [M] at index 0
+Caused by: java.lang.IllegalStateException: The specified child already has a parent.
+  at com.facebook.react.views.view.ReactClippingViewManager.addView
+```
+
+**Causa:** ao remover uma tela, o `react-native-screens` (Android) marca toda a subárvore dela com `startViewTransition` para a animação de saída não piscar. Nesse período o Android mantém o pai antigo de cada view. Se o Fabric mover uma view dessa tela para outro pai no mesmo momento (remove + insere o mesmo nó), o Android lança o erro acima. O Fabric faz isso quando uma `View` muda entre "achatada" (flattened) e "não achatada". Acontece também em build release e de forma intermitente, pois depende do timing. Não há correção upstream (react-native-screens#4677 foi encerrada sem correção; a versão 4.29.0 não resolve). A mitigação oficial é impedir o achatamento com `collapsable={false}`.
+
+**O que fazer em toda tela ou componente novo ou alterado:**
+
+1. Toda `View` cujo estilo ou filhos mudem por estado ou props (`pressed`, `loading`, `disabled`, `selected`, erro, foco) e que possa alternar entre ser só um contêiner de layout e ter visual próprio (`opacity`, `transform`, `backgroundColor`, borda, sombra/`elevation`, `zIndex`) **deve** ter `collapsable={false}`.
+2. A `View` interna de um `Pressable` com filhos em função (`{({ pressed }) => <View ...>}`) **deve** ter `collapsable={false}`. A `View` que o próprio `Pressable` renderiza já é `collapsable={false}`, então estilo dependente de `pressed` aplicado diretamente na prop `style` do `Pressable` é seguro.
+3. Use `AppButton` para botões e não reimplemente botões com `Pressable` + `View` interna. O `AppButton` já aplica esta regra, inclusive no botão de voltar do `ScreenHeader`. Ao editar o `AppButton`, preserve os `collapsable={false}` e o comentário que referencia a issue.
+4. Em telas que podem ser removidas, não alterne a estrutura da árvore de forma que mova filhos entre pais (trocar wrappers, reordenar irmãos, alternar contêineres). Prefira trocar apenas o conteúdo de nós estáveis.
+5. Não dispare atualização visual de estado (`setState`, reset de formulário, invalidação com efeito imediato na UI) na tela que está sendo deixada no mesmo instante de `router.back()`, `replace` ou `dismiss`. Atualize antes de navegar ou não atualize.
+6. Callbacks e valores passados a componentes que possuem efeitos dependentes deles devem ter referência estável (`useCallback`, `useMemo`). Funções inline podem recriar efeitos, disparar consultas nativas e gerar cascata de re-renders durante transições. Exemplo real: `publishDiagnosis` em `ReadinessContext`.
+7. Mantenha as regras anteriores: sem `overflow: 'hidden'` em hierarquias transitórias e `removeClippedSubviews={false}`.
+
+**Checklist antes de dar uma tela por concluída:**
+
+- Toda `View` com estilo condicional tem `collapsable={false}`.
+- Nenhum botão novo foi feito com `Pressable` + `View` interna dependente de `pressed` sem `collapsable={false}`.
+- Foi testado no Android ir e voltar pela seta de voltar pelo menos 20 vezes, tocando rápido, em cada tela nova ou alterada. Quando possível, repetir em build release (`npx expo run:android --variant release`).
+
+**Se o crash reaparecer:** registre o stack trace completo, identifique qual `View` da tela de saída muda de estilo ou estrutura no momento do toque e aplique `collapsable={false}` nela. Um patch no `SurfaceMountingManager` via `patch-package` é último recurso e só deve ser feito com autorização explícita.
+
+
 ## Pendências conhecidas
 
 - versões exatas compatíveis serão fixadas pelo projeto e pelo lockfile;

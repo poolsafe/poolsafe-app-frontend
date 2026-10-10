@@ -17,6 +17,7 @@ import { JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono';
 import { QueryProvider } from '@/providers/QueryClientProvider';
 import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth, AuthStatus } from '@/providers/AuthContext';
+import { ReadinessProvider } from '@/providers/ReadinessContext';
 import { AppText } from '@/components/primitives/AppText';
 import { AppBanner } from '@/components/primitives/AppBanner';
 import { AppButton } from '@/components/primitives/AppButton';
@@ -36,7 +37,9 @@ export default function RootLayout() {
     <QueryProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootContent fontsLoaded={fontsLoaded} fontError={fontError} />
+          <ReadinessProvider>
+            <RootContent fontsLoaded={fontsLoaded} fontError={fontError} />
+          </ReadinessProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryProvider>

@@ -19,6 +19,10 @@ export default function AppLayout() {
       <Stack.Screen name="alerts/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="cameras/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="monitoring" options={{ headerShown: false }} />
+      <Stack.Screen name="settings/profile" options={{ headerShown: false }} />
+      <Stack.Screen name="settings/security" options={{ headerShown: false }} />
+      <Stack.Screen name="settings/readiness" options={{ headerShown: false }} />
+      <Stack.Screen name="settings/appearance" options={{ headerShown: false }} />
     </Stack>
   );
 }
