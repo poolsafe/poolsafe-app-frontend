@@ -5,16 +5,33 @@
  * que o uso de HTTP sem TLS seja restrito exclusivamente ao ambiente de desenvolvimento local.
  */
 
-function resolveApiBaseUrl(): string {
-  const envUrl = process.env['EXPO_PUBLIC_API_BASE_URL']?.trim();
+const PUBLIC_PRODUCTION_API_BASE_URL = 'https://api.poolsafe.app/api/v1';
+const LOCAL_DEV_API_BASE_URL = 'http://10.0.2.2:3000/api/v1';
 
-  // Em desenvolvimento local, se não informada, assume o gateway padrão do emulador Android (porta 3000)
-  const rawUrl = envUrl || 'http://10.0.2.2:3000/api/v1';
+export function resolveApiBaseUrl(
+  envUrlOverride?: string,
+  isReleaseOverride?: boolean,
+): string {
+  const isReleaseBuild =
+    isReleaseOverride !== undefined
+      ? isReleaseOverride
+      : typeof __DEV__ !== 'undefined' && !__DEV__;
+
+  // Em produção/release, o aplicativo consome deterministicamente o endpoint canônico HTTPS da VPS,
+  // impedindo que variáveis de desenvolvimento em arquivos .env locais contaminem o artefato de release.
+  // Em desenvolvimento, aceita a URL configurada localmente ou recorre ao gateway do emulador.
+  let rawUrl: string;
+  if (isReleaseBuild) {
+    rawUrl = envUrlOverride !== undefined ? envUrlOverride : PUBLIC_PRODUCTION_API_BASE_URL;
+  } else {
+    const envUrl = (envUrlOverride !== undefined ? envUrlOverride : process.env.EXPO_PUBLIC_API_BASE_URL)?.trim();
+    rawUrl = envUrl || LOCAL_DEV_API_BASE_URL;
+  }
 
   // Normalização: remove barra final se houver
   const normalized = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
 
-  // Validação de segurança: HTTP inseguro é estritamente proibido fora do ambiente de desenvolvimento
+  // Validação de formato de protocolo
   const isHttp = normalized.startsWith('http://');
   const isHttps = normalized.startsWith('https://');
 
@@ -29,7 +46,19 @@ function resolveApiBaseUrl(): string {
     normalized.includes('localhost') ||
     normalized.includes('127.0.0.1');
 
-  if (isHttp && !isLocalHost && !__DEV__) {
+  // Validação estrita de produção/release: conexões HTTP e referências a localhost/IPs locais são estritamente proibidas
+  if (isReleaseBuild) {
+    if (!isHttps) {
+      throw new Error(
+        `[Config] O build de produção (release) requer HTTPS obrigatório. Protocolo recebido: ${normalized}`,
+      );
+    }
+    if (isLocalHost) {
+      throw new Error(
+        `[Config] Referências a localhost/IPs locais são estritamente proibidas no build de produção. Valor: ${normalized}`,
+      );
+    }
+  } else if (typeof __DEV__ !== 'undefined' && !__DEV__ && isHttp && !isLocalHost) {
     throw new Error(
       `[Config] Conexões HTTP não criptografadas são proibidas fora do desenvolvimento local.`,
     );
