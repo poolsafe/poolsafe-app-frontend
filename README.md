@@ -41,7 +41,8 @@ Crie uma letra de unidade virtual apontando para a **pasta mãe do repositório*
 
 ```powershell
 # 1. Criar o drive virtual P: apontando para a pasta raiz do repositório
-subst P: C:\Users\<SeuUsuario>\Documents\Github-Poolsafe-TCC
+subst P: <CAMINHO_RAIZ_REPOSITORIO>
+# Exemplo: subst P: C:\Users\<SeuUsuario>\Documents\Github-Poolsafe-TCC
 
 # 2. Acessar o frontend pela unidade virtual
 cd P:\poolsafe-app-frontend
@@ -74,12 +75,34 @@ src/
 
 ## Variáveis de ambiente
 
-Copie `.env.example` para `.env.local` e preencha os valores:
+Copie `.env.example` para `.env` e configure o endpoint da API para desenvolvimento local:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-## Pendências do bootstrap
+* **Desenvolvimento (`Debug`):** O aplicativo consome a variável `EXPO_PUBLIC_API_BASE_URL` configurada no `.env` (ex: `http://10.0.2.2:3000/api/v1` no emulador ou `http://<IP_DO_PC>:3012/api/v1` em celular conectado na mesma rede Wi-Fi).
+* **Produção (`Release`):** O aplicativo consome **obrigatoriamente e deterministicamente** a URL pública canônica segura (`https://api.poolsafe.app/api/v1`), impedindo contaminações por arquivos locais de desenvolvimento.
 
-Consulte `.agents/BOOTSTRAP_PENDENCIAS.md` na raiz do workspace.
+## Geração de APK Release (Produção / Demonstração)
+
+Para compilar um arquivo **APK autônomo** para instalação física em smartphones Android sem depender do computador:
+
+Consulte o guia completo: 📖 [Guia de Geração de APK (GERAR_APK_POOLSAFE.md)](./GERAR_APK_POOLSAFE.md).
+
+### Resumo dos comandos:
+```powershell
+# 1. Mapear unidade curta (evita limite de 260 caracteres no Windows)
+subst P: <CAMINHO_RAIZ_REPOSITORIO>
+
+# 2. Acessar a pasta nativa
+cd P:\poolsafe-app-frontend\android
+
+# 3. Compilar APK Release com suporte a processadores ARM reais
+.\gradlew.bat assembleRelease "-PreactNativeArchitectures=arm64-v8a,armeabi-v7a"
+
+# 4. Desmontar a unidade ao finalizar
+subst P: /d
+```
+
+> **Chaves de Assinatura:** O build de release requer o arquivo `android/key.properties` configurado com base no modelo [`android/key.properties.example`](./android/key.properties.example) e o arquivo `android/app/poolsafe-release.keystore`. Consulte o guia acima para detalhes sobre como configurar em novas máquinas.
