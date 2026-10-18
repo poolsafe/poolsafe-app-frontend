@@ -23,6 +23,7 @@ export default function AppLayout() {
       <Stack.Screen name="settings/security" options={{ headerShown: false }} />
       <Stack.Screen name="settings/readiness" options={{ headerShown: false }} />
       <Stack.Screen name="settings/appearance" options={{ headerShown: false }} />
+      <Stack.Screen name="settings/about" options={{ headerShown: false }} />
     </Stack>
   );
 }

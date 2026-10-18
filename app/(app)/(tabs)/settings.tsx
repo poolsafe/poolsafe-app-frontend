@@ -274,8 +274,18 @@ export default function SettingsScreen() {
             icon="moon"
             title="Aparência"
             subtitle={getThemeSubtitle()}
-            isLast={true}
             onPress={() => router.push('/(app)/settings/appearance')}
+          />
+
+          <View style={[styles.itemSeparator, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
+
+          <SettingsMenuItem
+            testID="settings-item-about"
+            icon="info"
+            title="Sobre e Termos Legais"
+            subtitle="Termos de Uso, Privacidade e informações do projeto"
+            isLast={true}
+            onPress={() => router.push('/(app)/settings/about' as any)}
           />
         </AppCard>
 

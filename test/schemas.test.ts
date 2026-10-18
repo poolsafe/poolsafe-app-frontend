@@ -69,15 +69,78 @@ test('1. Schemas de Login - Validações de e-mail e senha', () => {
   }
 });
 
-test('2. Schemas de Cadastro - Validação de nome, senha e confirmação exclusiva no cliente', () => {
-  // Sucesso com confirmação idêntica
+test('2. Schemas de Cadastro - Validação de nome, senha, confirmação, manifestações e telefone', () => {
+  // Sucesso com confirmação idêntica e manifestações obrigatórias
   const valid = registerSchema.safeParse({
     name: 'Dan Silva',
     email: 'dan@example.com',
     password: 'senhaSegura123',
     passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
   });
   assert.equal(valid.success, true);
+
+  // Rejeição quando termos não foram aceitos
+  const noTerms = registerSchema.safeParse({
+    name: 'Dan Silva',
+    email: 'dan@example.com',
+    password: 'senhaSegura123',
+    passwordConfirmation: 'senhaSegura123',
+    termsAccepted: false,
+    privacyAware: true,
+  });
+  assert.equal(noTerms.success, false);
+
+  // Rejeição quando aviso de privacidade não foi reconhecido
+  const noPrivacy = registerSchema.safeParse({
+    name: 'Dan Silva',
+    email: 'dan@example.com',
+    password: 'senhaSegura123',
+    passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: false,
+  });
+  assert.equal(noPrivacy.success, false);
+
+  // Sucesso com telefone opcional válido e autorizado
+  const validWithPhone = registerSchema.safeParse({
+    name: 'Dan Silva',
+    email: 'dan@example.com',
+    password: 'senhaSegura123',
+    passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
+    phone: '(11) 98765-4321',
+    phoneContactAuthorized: true,
+  });
+  assert.equal(validWithPhone.success, true);
+
+  // Rejeição com telefone preenchido mas sem autorização
+  const phoneWithoutAuth = registerSchema.safeParse({
+    name: 'Dan Silva',
+    email: 'dan@example.com',
+    password: 'senhaSegura123',
+    passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
+    phone: '(11) 98765-4321',
+    phoneContactAuthorized: false,
+  });
+  assert.equal(phoneWithoutAuth.success, false);
+
+  // Rejeição com telefone em formato inválido
+  const invalidPhone = registerSchema.safeParse({
+    name: 'Dan Silva',
+    email: 'dan@example.com',
+    password: 'senhaSegura123',
+    passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
+    phone: '1234',
+    phoneContactAuthorized: true,
+  });
+  assert.equal(invalidPhone.success, false);
 
   // Nome menor que 2 caracteres após trim
   const shortName = registerSchema.safeParse({
@@ -85,6 +148,8 @@ test('2. Schemas de Cadastro - Validação de nome, senha e confirmação exclus
     email: 'dan@example.com',
     password: 'senhaSegura123',
     passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
   });
   assert.equal(shortName.success, false);
 
@@ -94,6 +159,8 @@ test('2. Schemas de Cadastro - Validação de nome, senha e confirmação exclus
     email: 'dan@example.com',
     password: 'senhaSegura123',
     passwordConfirmation: 'senhaSegura123',
+    termsAccepted: true,
+    privacyAware: true,
   });
   assert.equal(longName.success, false);
 
@@ -103,6 +170,8 @@ test('2. Schemas de Cadastro - Validação de nome, senha e confirmação exclus
     email: 'dan@example.com',
     password: 'senhaSegura123',
     passwordConfirmation: 'senhaDiferente456',
+    termsAccepted: true,
+    privacyAware: true,
   });
   assert.equal(mismatch.success, false);
   if (!mismatch.success) {

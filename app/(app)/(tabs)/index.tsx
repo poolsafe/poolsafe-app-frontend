@@ -24,6 +24,9 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/providers/AuthContext';
 import { useHomeQuery } from '@/hooks/useHomeQuery';
 import { useTheme } from '@/theme/useTheme';
+import { authService } from '@/services/auth/auth-service';
+import { ApiError } from '@/services/api/errors';
+import { LegalDocumentModal } from '@/components/domain/LegalDocumentModal';
 import { spacing, radius } from '@/theme/tokens';
 import type { ColorTokens } from '@/theme/colors';
 import type {
@@ -132,7 +135,7 @@ function getMonitoringDisplay(
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, tokens, updateTokens, updateUser } = useAuth();
   const { colors } = useTheme();
   const {
     data,
@@ -141,6 +144,42 @@ export default function HomeScreen() {
     isFetching,
     refetch,
   } = useHomeQuery();
+
+  const [postponed, setPostponed] = React.useState(false);
+  const [reviewingDoc, setReviewingDoc] = React.useState<'termos-de-uso' | 'aviso-de-privacidade' | null>(null);
+  const [isAccepting, setIsAccepting] = React.useState(false);
+  const [acceptError, setAcceptError] = React.useState<string | null>(null);
+
+  const hasPendingManifestations = Boolean(user && (!user.termsAcceptedAt || !user.privacyAwareAt));
+
+  const handleAcceptManifestations = async () => {
+    if (!tokens) return;
+    setIsAccepting(true);
+    setAcceptError(null);
+
+    try {
+      const updatedUser = await authService.executeWithAuth(
+        tokens,
+        (accessToken) =>
+          authService.registerManifestations(accessToken, {
+            termsAccepted: true,
+            termsVersion: '1.0',
+            privacyAware: true,
+            privacyVersion: '1.0',
+          }),
+        updateTokens,
+      );
+      updateUser(updatedUser);
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setAcceptError(err.detail || 'Não foi possível registrar o aceite. Tente novamente.');
+      } else {
+        setAcceptError('Falha de conexão ao registrar o aceite. Tente novamente.');
+      }
+    } finally {
+      setIsAccepting(false);
+    }
+  };
 
   const userFirstName = user?.name ? user.name.trim().split(' ')[0] : null;
   const greeting = userFirstName ? `Olá, ${userFirstName}` : 'Painel de monitoramento';
@@ -164,6 +203,70 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Checkpoint de Manifestações Legais para Contas Existentes (Não-bloqueante) */}
+        {hasPendingManifestations && !postponed && (
+          <AppCard
+            variant="raised"
+            style={[styles.manifestationPromptCard, { borderColor: colors.warning }]}
+          >
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.sectionHeaderTitle}>
+                <AppIcon name="shield" size={20} color={colors.warning} />
+                <AppText variant="heading3" style={styles.headerTitleText}>
+                  Termos e Privacidade (v1.0)
+                </AppText>
+              </View>
+              <AppBadge variant="warning" label="PENDENTE" />
+            </View>
+
+            <AppText variant="body" colorRole="textSecondary">
+              Para manter sua conta em conformidade com as diretrizes do PoolSafe,
+              leia e registre sua ciência sobre a versão vigente dos documentos legais.
+            </AppText>
+
+            {acceptError && (
+              <AppBanner variant="danger" message={acceptError} />
+            )}
+
+            <View style={styles.manifestationDocsRow}>
+              <AppButton
+                testID="btn-home-read-terms"
+                variant="ghost"
+                title="Ler Termos de Uso"
+                icon="file-text"
+                onPress={() => setReviewingDoc('termos-de-uso')}
+              />
+              <AppButton
+                testID="btn-home-read-privacy"
+                variant="ghost"
+                title="Ler Aviso de Privacidade"
+                icon="file-text"
+                onPress={() => setReviewingDoc('aviso-de-privacidade')}
+              />
+            </View>
+
+            <AppDivider style={styles.cardDivider} />
+
+            <View style={styles.manifestationActionsRow}>
+              <AppButton
+                testID="btn-home-postpone"
+                variant="ghost"
+                title="Lembrar mais tarde"
+                disabled={isAccepting}
+                onPress={() => setPostponed(true)}
+              />
+              <AppButton
+                testID="btn-home-accept"
+                variant="primary"
+                title="Aceitar e Continuar"
+                icon="check"
+                loading={isAccepting}
+                disabled={isAccepting}
+                onPress={handleAcceptManifestations}
+              />
+            </View>
+          </AppCard>
+        )}
         {/* ESTADO 1: Carregamento inicial (sem dados em cache) */}
         {isPending && !data && (
           <AppCard variant="glass" style={styles.stateCard}>
@@ -494,11 +597,35 @@ export default function HomeScreen() {
           </>
         )}
       </ScrollView>
+
+      {reviewingDoc && (
+        <LegalDocumentModal
+          visible={true}
+          documentId={reviewingDoc}
+          onClose={() => setReviewingDoc(null)}
+        />
+      )}
     </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  manifestationPromptCard: {
+    gap: spacing[2],
+    borderWidth: 1.5,
+  },
+  manifestationDocsRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    flexWrap: 'wrap',
+  },
+  manifestationActionsRow: {
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
   scrollContent: {
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[8],

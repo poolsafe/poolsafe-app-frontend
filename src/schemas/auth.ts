@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidBrazilianPhone } from '../utils/phone.ts';
 
 /**
  * Schemas de validação Zod para os formulários de Login e Cadastro.
@@ -8,6 +9,10 @@ import { z } from 'zod';
  * - E-mail: formato válido, até 254 caracteres
  * - Senha: entre 8 e 128 caracteres, SEM remoção de espaços
  * - passwordConfirmation: apenas no cliente, deve coincidir exatamente
+ * - termsAccepted: booleano obrigatório true
+ * - privacyAware: booleano obrigatório true
+ * - phone: opcional; se preenchido, deve ser telefone brasileiro válido com DDD
+ * - phoneContactAuthorized: booleano opcional (default false)
  */
 
 export const loginSchema = z.object({
@@ -47,11 +52,59 @@ export const registerSchema = z
     passwordConfirmation: z
       .string()
       .min(1, 'Confirme sua senha.'),
+    phone: z.string().optional(),
+    phoneContactAuthorized: z.boolean().optional(),
+    termsAccepted: z
+      .boolean()
+      .refine((val) => val === true, {
+        message: 'É necessário aceitar os Termos de Uso.',
+      }),
+    privacyAware: z
+      .boolean()
+      .refine((val) => val === true, {
+        message: 'É necessário declarar ciência do Aviso de Privacidade.',
+      }),
   })
   .refine((data) => data.password === data.passwordConfirmation, {
     message: 'A confirmação de senha deve ser idêntica à senha.',
     path: ['passwordConfirmation'],
-  });
+  })
+  .refine(
+    (data) => {
+      if (data.phone && data.phone.trim().length > 0) {
+        return isValidBrazilianPhone(data.phone);
+      }
+      return true;
+    },
+    {
+      message: 'Informe um telefone brasileiro válido com DDD (ex: (11) 98765-4321).',
+      path: ['phone'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.phoneContactAuthorized) {
+        return !!data.phone && data.phone.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Informe o número do telefone para autorizar o contato.',
+      path: ['phone'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.phone && data.phone.trim().length > 0) {
+        return data.phoneContactAuthorized === true;
+      }
+      return true;
+    },
+    {
+      message: 'Marque a autorização para permitir o contato com o número informado.',
+      path: ['phoneContactAuthorized'],
+    },
+  );
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
 

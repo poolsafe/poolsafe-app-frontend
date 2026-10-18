@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -19,10 +20,13 @@ import { AppInput } from '@/components/primitives/AppInput';
 import { AppButton } from '@/components/primitives/AppButton';
 import { AppBanner } from '@/components/primitives/AppBanner';
 import { AppDivider } from '@/components/primitives/AppDivider';
+import { AppCheckbox } from '@/components/primitives/AppCheckbox';
+import { LegalDocumentModal } from '@/components/domain/LegalDocumentModal';
 import { spacing } from '@/theme/tokens';
 import { registerSchema, RegisterFormData } from '@/schemas/auth';
 import { useAuth } from '@/providers/AuthContext';
 import { ApiError } from '@/services/api/errors';
+import { formatPhoneInput } from '@/utils/phone';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -30,6 +34,9 @@ export default function RegisterScreen() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Controle do modal de leitura de documentos legais
+  const [selectedDoc, setSelectedDoc] = useState<'termos-de-uso' | 'aviso-de-privacidade' | null>(null);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -52,7 +59,6 @@ export default function RegisterScreen() {
     };
   }, []);
 
-
   const scrollToBottom = () => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -71,6 +77,10 @@ export default function RegisterScreen() {
       email: '',
       password: '',
       passwordConfirmation: '',
+      phone: '',
+      phoneContactAuthorized: false,
+      termsAccepted: false,
+      privacyAware: false,
     },
     mode: 'onBlur',
   });
@@ -78,11 +88,20 @@ export default function RegisterScreen() {
   const onSubmit = async (data: RegisterFormData) => {
     setGeneralError(null);
     try {
-      // passwordConfirmation NÃO é enviado à API
       await registerAccount({
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
-        password: data.password, // preserva rigorosamente todos os caracteres da senha
+        password: data.password, // Preserva rigorosamente os caracteres da senha
+        termsAccepted: true,
+        termsVersion: '1.0',
+        privacyAware: true,
+        privacyVersion: '1.0',
+        phone:
+          data.phoneContactAuthorized && data.phone && data.phone.trim().length > 0
+            ? data.phone.trim()
+            : undefined,
+        phoneContactAuthorized: data.phoneContactAuthorized,
+        phoneContactVersion: data.phoneContactAuthorized ? '1.0' : undefined,
       });
 
       // Transição atômica para a área autenticada após persistência da sessão
@@ -90,7 +109,6 @@ export default function RegisterScreen() {
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.isAccountCannotBeCreated()) {
-          // Mensagem não enumerável por requisito de segurança (não revela se e-mail já existe)
           setGeneralError(
             'Não foi possível concluir o cadastro com os dados informados. Verifique as informações ou acerte seu acesso.',
           );
@@ -105,16 +123,26 @@ export default function RegisterScreen() {
         }
 
         if (err.isNetworkError || err.isTimeout) {
-          setGeneralError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+          setGeneralError(
+            'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
+          );
           return;
         }
 
-        // Mapeia erros de validação RFC 9457 para os campos
+        // Mapeia erros de validação RFC 9457 para os campos do formulário
         const fieldErrors = err.getFieldErrors();
         let hasMappedField = false;
 
         for (const [field, message] of Object.entries(fieldErrors)) {
-          if (field === 'name' || field === 'email' || field === 'password') {
+          if (
+            field === 'name' ||
+            field === 'email' ||
+            field === 'password' ||
+            field === 'phone' ||
+            field === 'phoneContactAuthorized' ||
+            field === 'termsAccepted' ||
+            field === 'privacyAware'
+          ) {
             setError(field as keyof RegisterFormData, { type: 'server', message });
             hasMappedField = true;
           }
@@ -170,7 +198,7 @@ export default function RegisterScreen() {
               />
             )}
 
-            <View style={styles.form}>
+            <View collapsable={false} style={styles.form}>
               <Controller
                 control={control}
                 name="name"
@@ -212,6 +240,28 @@ export default function RegisterScreen() {
                     autoCorrect={false}
                     autoComplete="email"
                     textContentType="emailAddress"
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput
+                    testID="register-input-phone"
+                    label="Telefone (opcional)"
+                    placeholder="(XX) XXXXX-XXXX"
+                    icon="phone"
+                    value={value || ''}
+                    onChangeText={(text) => onChange(formatPhoneInput(text))}
+                    onBlur={onBlur}
+                    error={errors.phone?.message}
+                    helperText="Número com DDD para contato complementar da equipe."
+                    disabled={isSubmitting}
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                    textContentType="telephoneNumber"
                   />
                 )}
               />
@@ -264,11 +314,119 @@ export default function RegisterScreen() {
                 )}
               />
 
-              <View style={styles.actionContainer}>
+              {/* Seção de Manifestações e Termos */}
+              <AppDivider marginVertical={spacing[3]} />
+
+              <AppText variant="smallStrong" colorRole="primary" style={styles.sectionHeader}>
+                Termos, Privacidade e Autorizações
+              </AppText>
+
+              {/* 1. Aceite dos Termos de Uso (Obrigatório) */}
+              <Controller
+                control={control}
+                name="termsAccepted"
+                render={({ field: { onChange, value } }) => (
+                  <AppCheckbox
+                    testID="register-checkbox-terms"
+                    checked={value}
+                    onValueChange={onChange}
+                    badgeText="Obrigatório"
+                    badgeVariant="warning"
+                    disabled={isSubmitting}
+                    error={errors.termsAccepted?.message}
+                    label={
+                      <View collapsable={false} style={styles.checkboxLabelContainer}>
+                        <AppText variant="body" style={styles.checkboxLabelText}>
+                          Li e aceito os{' '}
+                          <AppText
+                            variant="bodyStrong"
+                            colorRole="primary"
+                            onPress={() => setSelectedDoc('termos-de-uso')}
+                          >
+                            Termos de Uso
+                          </AppText>
+                          .
+                        </AppText>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Ler Termos de Uso"
+                          onPress={() => setSelectedDoc('termos-de-uso')}
+                        >
+                          <AppText variant="caption" colorRole="primary" style={styles.readDocLink}>
+                            [Ler documento]
+                          </AppText>
+                        </Pressable>
+                      </View>
+                    }
+                  />
+                )}
+              />
+
+              {/* 2. Ciência do Aviso de Privacidade (Obrigatório) */}
+              <Controller
+                control={control}
+                name="privacyAware"
+                render={({ field: { onChange, value } }) => (
+                  <AppCheckbox
+                    testID="register-checkbox-privacy"
+                    checked={value}
+                    onValueChange={onChange}
+                    badgeText="Obrigatório"
+                    badgeVariant="warning"
+                    disabled={isSubmitting}
+                    error={errors.privacyAware?.message}
+                    label={
+                      <View collapsable={false} style={styles.checkboxLabelContainer}>
+                        <AppText variant="body" style={styles.checkboxLabelText}>
+                          Declaro ciência do{' '}
+                          <AppText
+                            variant="bodyStrong"
+                            colorRole="primary"
+                            onPress={() => setSelectedDoc('aviso-de-privacidade')}
+                          >
+                            Aviso de Privacidade
+                          </AppText>
+                          .
+                        </AppText>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Ler Aviso de Privacidade"
+                          onPress={() => setSelectedDoc('aviso-de-privacidade')}
+                        >
+                          <AppText variant="caption" colorRole="primary" style={styles.readDocLink}>
+                            [Ler documento]
+                          </AppText>
+                        </Pressable>
+                      </View>
+                    }
+                  />
+                )}
+              />
+
+              {/* 3. Autorização de Contato Telefônico (Opcional) */}
+              <Controller
+                control={control}
+                name="phoneContactAuthorized"
+                render={({ field: { onChange, value } }) => (
+                  <AppCheckbox
+                    testID="register-checkbox-phone-contact"
+                    checked={Boolean(value)}
+                    onValueChange={onChange}
+                    badgeText="Opcional"
+                    badgeVariant="info"
+                    disabled={isSubmitting}
+                    error={errors.phoneContactAuthorized?.message}
+                    label="Autorizo contato telefônico complementar da equipe sobre suporte, avisos operacionais e situações do protótipo."
+                    subtitle="Sem esta autorização, o telefone não será armazenado para essa finalidade. A recusa não impede a criação da conta."
+                  />
+                )}
+              />
+
+              <View collapsable={false} style={styles.actionContainer}>
                 <AppButton
                   testID="register-submit-button"
                   variant="primary"
-                  title="Cadastrar"
+                  title="Criar Conta"
                   icon="user-plus"
                   fullWidth={true}
                   loading={isSubmitting}
@@ -280,7 +438,7 @@ export default function RegisterScreen() {
 
             <AppDivider marginVertical={spacing[4]} />
 
-            <View style={styles.loginContainer}>
+            <View collapsable={false} style={styles.loginContainer}>
               <AppText variant="small" colorRole="textMuted" style={styles.loginPrompt}>
                 Já possui uma conta?
               </AppText>
@@ -297,6 +455,15 @@ export default function RegisterScreen() {
           </AppCard>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal de leitura dos documentos sem perda dos dados do formulário */}
+      {selectedDoc && (
+        <LegalDocumentModal
+          visible={true}
+          documentId={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+        />
+      )}
     </AppBackground>
   );
 }
@@ -325,6 +492,22 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing[2],
+  },
+  sectionHeader: {
+    marginBottom: spacing[1],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  checkboxLabelContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  checkboxLabelText: {
+    lineHeight: 20,
+  },
+  readDocLink: {
+    marginTop: 2,
+    textDecorationLine: 'underline',
   },
   actionContainer: {
     marginTop: spacing[3],

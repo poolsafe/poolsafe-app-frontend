@@ -32,8 +32,17 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   status: string;
   createdAt?: string;
+  termsVersion?: string | null;
+  termsAcceptedAt?: string | null;
+  privacyVersion?: string | null;
+  privacyAwareAt?: string | null;
+  phoneContactAuthorized?: boolean;
+  phoneContactVersion?: string | null;
+  phoneContactGrantedAt?: string | null;
+  phoneContactRevokedAt?: string | null;
 }
 
 export interface AuthTokens {
@@ -53,11 +62,30 @@ export type RefreshResponseData = AuthTokens;
 
 export type UserProfileResponseData = AuthUser;
 
+// Documentos legais versionados
+export interface LegalDocumentMetadata {
+  id: string;
+  title: string;
+  version: string;
+  updatedAt: string;
+}
+
+export interface LegalDocumentResponseData extends LegalDocumentMetadata {
+  content: string;
+}
+
 // Payloads de requisição
 export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  termsAccepted: boolean;
+  termsVersion: string;
+  privacyAware: boolean;
+  privacyVersion: string;
+  phone?: string | null;
+  phoneContactAuthorized?: boolean;
+  phoneContactVersion?: string;
 }
 
 export interface LoginPayload {
@@ -74,7 +102,16 @@ export interface LogoutPayload {
 }
 
 export interface UpdateProfilePayload {
-  name: string;
+  name?: string;
+  phone?: string | null;
+  phoneContactAuthorized?: boolean;
+}
+
+export interface RegisterManifestationsPayload {
+  termsAccepted: boolean;
+  termsVersion: string;
+  privacyAware: boolean;
+  privacyVersion: string;
 }
 
 export interface ChangePasswordPayload {

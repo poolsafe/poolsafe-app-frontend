@@ -8,6 +8,7 @@ import type {
   RegisterPayload,
   UserProfileResponseData,
   UpdateProfilePayload,
+  RegisterManifestationsPayload,
   ChangePasswordPayload,
   ForgotPasswordResponseData,
   ResetPasswordPayload,
@@ -85,6 +86,20 @@ export class AuthService {
     const response = await this.client.patch<UserProfileResponseData>('/users/me', payload, {
       token: accessToken,
     });
+    return response.data;
+  }
+
+  public async registerManifestations(
+    accessToken: string,
+    payload: RegisterManifestationsPayload,
+  ): Promise<AuthUser> {
+    const response = await this.client.post<UserProfileResponseData>(
+      '/users/me/manifestations',
+      payload,
+      {
+        token: accessToken,
+      },
+    );
     return response.data;
   }
 
