@@ -261,3 +261,135 @@ test('6. Abertura de Configurações de Bateria - Tenta módulo nativo e faz fal
 
   assert.equal(nativeOpenCalled, true);
 });
+
+// -----------------------------------------------------------------------------
+// 7. Task 9B.4 — Alarme com Dados do Alerta (alertId e deliveryId)
+// -----------------------------------------------------------------------------
+test('7. Task 9B.4 - Início do alarme recebe opções de payload e expõe identificadores ativos', async () => {
+  let activeAlertId: string | null = null;
+  let activeDeliveryId: string | null = null;
+  let isRunning = false;
+  let receivedOptions: unknown = null;
+
+  const mockCriticalDriver: CriticalAlarmDriver = {
+    startAlarmAsync: async (options) => {
+      receivedOptions = options;
+      activeAlertId = options?.alertId ?? null;
+      activeDeliveryId = options?.deliveryId ?? null;
+      isRunning = true;
+      return true;
+    },
+    stopAlarmAsync: async () => {
+      isRunning = false;
+      activeAlertId = null;
+      activeDeliveryId = null;
+      return true;
+    },
+    isAlarmActive: () => isRunning,
+    getActiveAlertId: () => activeAlertId,
+    getActiveDeliveryId: () => activeDeliveryId,
+  };
+
+  const service = new NotificationsService(undefined, undefined, mockCriticalDriver);
+
+  assert.equal(service.getActiveAlertId(), null);
+  assert.equal(service.getActiveDeliveryId(), null);
+
+  const startResult = await service.startCriticalAlarmAsync({
+    alertId: 'alert-101',
+    deliveryId: 'deliv-202',
+    title: '[ALERTA] Risco na Piscina',
+    message: 'Movimento brusco detectado',
+  });
+
+  assert.equal(startResult, true);
+  assert.equal(service.isCriticalAlarmActive(), true);
+  assert.equal(service.getActiveAlertId(), 'alert-101');
+  assert.equal(service.getActiveDeliveryId(), 'deliv-202');
+  assert.deepEqual(receivedOptions, {
+    alertId: 'alert-101',
+    deliveryId: 'deliv-202',
+    title: '[ALERTA] Risco na Piscina',
+    message: 'Movimento brusco detectado',
+  });
+
+  await service.stopCriticalAlarmAsync();
+  assert.equal(service.isCriticalAlarmActive(), false);
+  assert.equal(service.getActiveAlertId(), null);
+  assert.equal(service.getActiveDeliveryId(), null);
+});
+
+// -----------------------------------------------------------------------------
+// 8. Task 9B.4 — Transição para Segundo Alerta Distinto e Deduplicação
+// -----------------------------------------------------------------------------
+test('8. Task 9B.4 - Transição para segundo alerta distinto atualiza contexto sem quebrar execução', async () => {
+  let activeAlertId: string | null = null;
+  let activeDeliveryId: string | null = null;
+  let isRunning = false;
+  let serviceCreationCount = 0;
+  let timerRenewals = 0;
+
+  const mockCriticalDriver: CriticalAlarmDriver = {
+    startAlarmAsync: async (options) => {
+      if (!isRunning) {
+        serviceCreationCount++;
+        isRunning = true;
+      } else if (options?.alertId && options.alertId !== activeAlertId) {
+        // Segundo alerta distinto recebido durante execução:
+        // Mantém mesmo serviço e renova o prazo de 30s
+        timerRenewals++;
+      }
+      activeAlertId = options?.alertId ?? null;
+      activeDeliveryId = options?.deliveryId ?? null;
+      return true;
+    },
+    stopAlarmAsync: async () => {
+      isRunning = false;
+      activeAlertId = null;
+      activeDeliveryId = null;
+      return true;
+    },
+    isAlarmActive: () => isRunning,
+    getActiveAlertId: () => activeAlertId,
+    getActiveDeliveryId: () => activeDeliveryId,
+  };
+
+  const service = new NotificationsService(undefined, undefined, mockCriticalDriver);
+
+  // 1. Primeiro alerta recebido
+  await service.startCriticalAlarmAsync({
+    alertId: 'alert-1',
+    deliveryId: 'deliv-1',
+    title: 'Alerta 1',
+  });
+
+  assert.equal(service.getActiveAlertId(), 'alert-1');
+  assert.equal(serviceCreationCount, 1);
+  assert.equal(timerRenewals, 0);
+
+  // 2. Repetição do mesmo alerta (mesmo alertId) -> Não renova prazo
+  await service.startCriticalAlarmAsync({
+    alertId: 'alert-1',
+    deliveryId: 'deliv-1',
+    title: 'Alerta 1 (Repetição)',
+  });
+
+  assert.equal(serviceCreationCount, 1);
+  assert.equal(timerRenewals, 0); // Repetição não renova prazo
+
+  // 3. Segundo alerta distinto (novo alertId) enquanto o primeiro toca:
+  await service.startCriticalAlarmAsync({
+    alertId: 'alert-2',
+    deliveryId: 'deliv-2',
+    title: 'Alerta 2 (Distinto)',
+  });
+
+  // Reutiliza o mesmo serviço (não recria) e renova prazo para até 30s
+  assert.equal(serviceCreationCount, 1);
+  assert.equal(timerRenewals, 1);
+  assert.equal(service.getActiveAlertId(), 'alert-2');
+  assert.equal(service.getActiveDeliveryId(), 'deliv-2');
+
+  await service.stopCriticalAlarmAsync();
+  assert.equal(service.isCriticalAlarmActive(), false);
+});

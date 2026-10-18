@@ -1,8 +1,15 @@
 /**
  * Tipos e interfaces para o módulo nativo de Alarme Crítico do PoolSafe.
  * 
- * Fatia 8A.1 — Prova nativa de alarme crítico.
+ * Fatias 8A.1 e 9B.4 — Alarme Crítico e Recepção de Alerta.
  */
+
+export interface StartAlarmOptions {
+  alertId?: string;
+  deliveryId?: string;
+  title?: string;
+  message?: string;
+}
 
 export interface AlarmStateChangedEvent {
   isActive: boolean;

@@ -51,9 +51,17 @@ export interface PlatformLinkingDriver {
 }
 
 export interface CriticalAlarmDriver {
-  startAlarmAsync: () => Promise<boolean>;
+  startAlarmAsync: (options?: {
+    alertId?: string;
+    deliveryId?: string;
+    title?: string;
+    message?: string;
+  }) => Promise<boolean>;
   stopAlarmAsync: () => Promise<boolean>;
   isAlarmActive: () => boolean;
+  getActiveAlertId?: () => string | null;
+  getActiveDeliveryId?: () => string | null;
+  clearAlarmStateForTestingAsync?: () => Promise<boolean>;
   isIgnoringBatteryOptimizations?: () => boolean;
   openBatteryOptimizationSettingsAsync?: () => Promise<boolean>;
   addListener?: (
@@ -106,9 +114,13 @@ function getCriticalAlarmDriver(): CriticalAlarmDriver {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require('../../../modules/poolsafe-critical-alarm/src/index.ts');
       activeCriticalAlarmDriver = {
-        startAlarmAsync: () => mod.startCriticalAlarmAsync(),
+        startAlarmAsync: (options) => mod.startCriticalAlarmAsync(options),
         stopAlarmAsync: () => mod.stopCriticalAlarmAsync(),
         isAlarmActive: () => mod.isCriticalAlarmActive(),
+        getActiveAlertId: () => mod.getActiveAlertId?.() ?? null,
+        getActiveDeliveryId: () => mod.getActiveDeliveryId?.() ?? null,
+        clearAlarmStateForTestingAsync: () =>
+          mod.clearAlarmStateForTestingAsync?.() ?? Promise.resolve(false),
         isIgnoringBatteryOptimizations: () => mod.isIgnoringBatteryOptimizations?.() ?? false,
         openBatteryOptimizationSettingsAsync: () =>
           mod.openBatteryOptimizationSettingsAsync?.() ?? Promise.resolve(false),
@@ -119,6 +131,9 @@ function getCriticalAlarmDriver(): CriticalAlarmDriver {
         startAlarmAsync: async () => false,
         stopAlarmAsync: async () => true,
         isAlarmActive: () => false,
+        getActiveAlertId: () => null,
+        getActiveDeliveryId: () => null,
+        clearAlarmStateForTestingAsync: async () => false,
         isIgnoringBatteryOptimizations: () => false,
         openBatteryOptimizationSettingsAsync: async () => false,
         addListener: () => ({ remove: () => {} }),
@@ -608,10 +623,15 @@ export class NotificationsService {
   }
 
   /**
-   * Inicia o teste da prova nativa de alarme crítico via Foreground Service (Fatia 8A.1).
+   * Inicia o teste da prova nativa de alarme crítico via Foreground Service (Fatias 8A.1 e 9B.4).
    */
-  async startCriticalAlarmAsync(): Promise<boolean> {
-    return await this.criticalAlarm.startAlarmAsync();
+  async startCriticalAlarmAsync(options?: {
+    alertId?: string;
+    deliveryId?: string;
+    title?: string;
+    message?: string;
+  }): Promise<boolean> {
+    return await this.criticalAlarm.startAlarmAsync(options);
   }
 
   /**
@@ -626,6 +646,27 @@ export class NotificationsService {
    */
   isCriticalAlarmActive(): boolean {
     return this.criticalAlarm.isAlarmActive();
+  }
+
+  /**
+   * Consulta o ID do alerta ativo no momento, se houver.
+   */
+  getActiveAlertId(): string | null {
+    return this.criticalAlarm.getActiveAlertId?.() ?? null;
+  }
+
+  /**
+   * Consulta o ID da entrega ativa no momento, se houver.
+   */
+  getActiveDeliveryId(): string | null {
+    return this.criticalAlarm.getActiveDeliveryId?.() ?? null;
+  }
+
+  /**
+   * Limpa o estado persistido de alarmes em testes.
+   */
+  async clearAlarmStateForTestingAsync(): Promise<boolean> {
+    return (await this.criticalAlarm.clearAlarmStateForTestingAsync?.()) ?? false;
   }
 
   /**

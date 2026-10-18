@@ -1,40 +1,60 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-13:12
-INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-13:12
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-23:12
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:1-23:12
 	package
-		INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
 	xmlns:android
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:11-69
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:1:11-69
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:3-75
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:3-75
 	android:name
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:20-72
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:2:20-72
 uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:3-90
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:3-90
 	android:name
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:20-87
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:3:20-87
 uses-permission#android.permission.VIBRATE
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:3-64
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:3-64
 	android:name
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:20-61
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:4:20-61
+uses-permission#android.permission.MODIFY_AUDIO_SETTINGS
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:5:3-78
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:5:20-75
 application
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:6:3-12:17
-service#expo.modules.criticalalarm.CriticalAlarmForegroundService
-ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:7:5-11:57
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:7:3-22:17
+service#expo.modules.criticalalarm.PoolSafeFirebaseMessagingService
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:8:5-15:15
 	android:enabled
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:9:9-31
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:10:9-31
 	android:exported
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:10:9-33
-	android:foregroundServiceType
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:11:9-54
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:11:9-33
 	android:name
-		ADDED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:8:9-81
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:9:9-83
+intent-filter#action:name:com.google.firebase.MESSAGING_EVENT
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:12:7-14:23
+	android:priority
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:12:22-42
+action#com.google.firebase.MESSAGING_EVENT
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:13:9-70
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:13:17-67
+service#expo.modules.criticalalarm.CriticalAlarmForegroundService
+ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:17:5-21:57
+	android:enabled
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:19:9-31
+	android:exported
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:20:9-33
+	android:foregroundServiceType
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:21:9-54
+	android:name
+		ADDED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml:18:9-81
 uses-sdk
-INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
-INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
 	android:targetSdkVersion
-		INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from C:\Users\Daniel\Documents\Github-Poolsafe-TCC\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml
+		INJECTED from P:\poolsafe-app-frontend\modules\poolsafe-critical-alarm\android\src\main\AndroidManifest.xml

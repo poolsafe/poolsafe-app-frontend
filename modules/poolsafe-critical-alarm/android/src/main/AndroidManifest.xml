@@ -2,8 +2,18 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
   <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
   <application>
+    <service
+        android:name="expo.modules.criticalalarm.PoolSafeFirebaseMessagingService"
+        android:enabled="true"
+        android:exported="false">
+      <intent-filter android:priority="1">
+        <action android:name="com.google.firebase.MESSAGING_EVENT" />
+      </intent-filter>
+    </service>
+
     <service
         android:name="expo.modules.criticalalarm.CriticalAlarmForegroundService"
         android:enabled="true"
