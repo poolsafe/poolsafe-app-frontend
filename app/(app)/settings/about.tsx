@@ -7,15 +7,27 @@ import { AppCard } from '@/components/primitives/AppCard';
 import { AppText } from '@/components/primitives/AppText';
 import { AppButton } from '@/components/primitives/AppButton';
 import { AppBadge } from '@/components/primitives/AppBadge';
+import { AppBanner } from '@/components/primitives/AppBanner';
 import { AppDivider } from '@/components/primitives/AppDivider';
 import { AppIcon } from '@/components/primitives/AppIcon';
 import { LegalDocumentModal } from '@/components/domain/LegalDocumentModal';
 import { spacing, radius } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 
 export default function AboutScreen() {
   const { colors, isDark } = useTheme();
   const [selectedDoc, setSelectedDoc] = useState<'termos-de-uso' | 'aviso-de-privacidade' | null>(null);
+
+  const appVersion =
+    Application.nativeApplicationVersion ||
+    Constants.expoConfig?.version ||
+    '1.0.0';
+  const buildVersion = Application.nativeBuildVersion;
+  const versionDisplay = buildVersion
+    ? `v${appVersion} (build ${buildVersion})`
+    : `v${appVersion}`;
 
   return (
     <AppBackground edges={['top', 'left', 'right']}>
@@ -55,19 +67,36 @@ export default function AboutScreen() {
               </AppText>
             </View>
 
-            <AppBadge label="v1.0 Protótipo" variant="info" />
+            <AppBadge label={`v${appVersion}`} variant="info" />
           </View>
 
           <AppDivider marginVertical={spacing[3]} />
 
           <AppText variant="body" colorRole="textSecondary" style={styles.description}>
-            O PoolSafe é um protótipo acadêmico de Trabalho de Conclusão de Curso (TCC) em Engenharia de Computação,
+            O PoolSafe é um protótipo acadêmico de Trabalho de Conclusão de Curso (TCC) em Ciência da Computação,
             desenvolvido para detecção precoce e alerta de incidentes de afogamento em piscinas residenciais
             por meio de visão computacional em borda e conectividade em nuvem.
           </AppText>
 
           <AppDivider marginVertical={spacing[3]} />
 
+          <AppBanner
+            testID="about-safety-disclaimer"
+            variant="warning"
+            icon="alert-triangle"
+            message="O PoolSafe é um protótipo acadêmico de apoio à prevenção e não substitui a supervisão humana presencial, barreiras físicas ou atendimento de emergência."
+          />
+
+          <AppDivider marginVertical={spacing[3]} />
+
+          <View style={styles.infoRow}>
+            <AppText variant="caption" colorRole="textMuted">Versão instalada:</AppText>
+            <AppText variant="smallStrong">{versionDisplay}</AppText>
+          </View>
+          <View style={styles.infoRow}>
+            <AppText variant="caption" colorRole="textMuted">Natureza do projeto:</AppText>
+            <AppText variant="smallStrong">Protótipo acadêmico</AppText>
+          </View>
           <View style={styles.infoRow}>
             <AppText variant="caption" colorRole="textMuted">Equipe:</AppText>
             <AppText variant="smallStrong">Cristyan, Daniel, Jonatas</AppText>
