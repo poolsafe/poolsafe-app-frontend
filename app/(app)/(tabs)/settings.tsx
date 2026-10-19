@@ -184,7 +184,7 @@ export default function SettingsScreen() {
       <ScreenHeader
         title="Definições"
         subtitle="Configurações e informações do sistema"
-        showThemeToggle={true}
+        showThemeToggle={false}
       />
 
       <ScrollView

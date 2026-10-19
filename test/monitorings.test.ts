@@ -497,22 +497,148 @@ test('9. Segurança de Senha - Estado transitório: validação e limpeza imedia
 
 // ─── 6. STALE DATA & MUTATION SAFEGUARD TESTS ────────────────────────────────
 
-test('10. Bloqueio com Dados Desatualizados - Impede ações sensíveis quando dados estão inconsistentes', () => {
+test('10. Bloqueio com Dados Desatualizados - Impede início, pausa, retomada e encerramento', () => {
   const isStale = true;
-  const isOfflineCamera = true;
 
-  // Retomada exige câmeras online e dados frescos
-  const canResume = (stale: boolean, cameraOffline: boolean) => !stale && !cameraOffline;
-  assert.equal(canResume(isStale, false), false);
-  assert.equal(canResume(false, isOfflineCamera), false);
-  assert.equal(canResume(false, false), true);
-
-  // Início de monitoramento exige ao menos uma câmera e estado fresco
+  // 1. Início de monitoramento
   const canStart = (stale: boolean, selectedCount: number, isPending: boolean) =>
     !stale && selectedCount > 0 && !isPending;
 
-  assert.equal(canStart(true, 2, false), false); // bloqueado se stale
-  assert.equal(canStart(false, 0, false), false); // bloqueado se nenhuma selecionada
-  assert.equal(canStart(false, 2, true), false); // bloqueado se mutação pendente (prevenção de duplo envio)
-  assert.equal(canStart(false, 2, false), true); // permitido
+  assert.equal(canStart(isStale, 2, false), false, 'Iniciar deve ser bloqueado quando isStale for true');
+  assert.equal(canStart(false, 0, false), false, 'Iniciar deve ser bloqueado se nenhuma câmera selecionada');
+  assert.equal(canStart(false, 2, true), false, 'Iniciar deve ser bloqueado se mutação já pendente');
+  assert.equal(canStart(false, 2, false), true, 'Iniciar deve ser liberado quando dados forem confiáveis');
+
+  // 2. Pausa e abertura do modal
+  const canOpenPause = (stale: boolean) => !stale;
+  assert.equal(canOpenPause(isStale), false, 'Abertura de pausa deve ser bloqueada quando isStale for true');
+  assert.equal(canOpenPause(false), true, 'Abertura de pausa liberada quando dados confiáveis');
+
+  // 3. Retomada
+  const canResume = (stale: boolean, cameraOffline: boolean, isPending: boolean) =>
+    !stale && !cameraOffline && !isPending;
+
+  assert.equal(canResume(isStale, false, false), false, 'Retomar deve ser bloqueado quando isStale for true');
+  assert.equal(canResume(false, true, false), false, 'Retomar deve ser bloqueado se câmera offline');
+  assert.equal(canResume(false, false, true), false, 'Retomar deve ser bloqueado se mutação pendente');
+  assert.equal(canResume(false, false, false), true, 'Retomar deve ser liberado quando dados confiáveis');
+
+  // 4. Encerramento e abertura do modal
+  const canOpenEnd = (stale: boolean) => !stale;
+  assert.equal(canOpenEnd(isStale), false, 'Abertura de encerramento deve ser bloqueada quando isStale for true');
+  assert.equal(canOpenEnd(false), true, 'Abertura de encerramento liberada quando dados confiáveis');
+
+  // 5. Seleção de câmera
+  const canToggleCamera = (stale: boolean, eligible: boolean) => !stale && eligible;
+  assert.equal(canToggleCamera(isStale, true), false, 'Seleção de câmera bloqueada se dados desatualizados');
+  assert.equal(canToggleCamera(false, false), false, 'Seleção de câmera bloqueada se câmera inelegível');
+  assert.equal(canToggleCamera(false, true), true, 'Seleção liberada quando saudável e elegível');
 });
+
+test('11. Cálculo de isStale - Distingue refetch normal em segundo plano de falha de atualização com cache retido', () => {
+  const calculateIsStale = (
+    isMonitoringsError: boolean,
+    hasMonitorings: boolean,
+    isCamerasError: boolean,
+    hasCameras: boolean,
+  ) => (isMonitoringsError && hasMonitorings) || (isCamerasError && hasCameras);
+
+  // Cenário A: Consulta inicial saudável, sem refetch
+  assert.equal(calculateIsStale(false, true, false, true), false);
+
+  // Cenário B: Consulta elegível para refetch rodando em background (isFetching=true, isError=false)
+  // NÃO deve ser considerada stale
+  assert.equal(calculateIsStale(false, true, false, true), false);
+
+  // Cenário C: Refetch falhou para monitoramentos enquanto cache existe -> deve ser stale
+  assert.equal(calculateIsStale(true, true, false, true), true);
+
+  // Cenário D: Refetch falhou para câmeras enquanto cache existe -> deve ser stale
+  assert.equal(calculateIsStale(false, true, true, true), true);
+
+  // Cenário E: Ambas falharam com cache mantido -> stale
+  assert.equal(calculateIsStale(true, true, true, true), true);
+
+  // Cenário F: Erro inicial sem dados em cache (não é stale, é falha total tratada por tela de erro)
+  assert.equal(calculateIsStale(true, false, false, false), false);
+});
+
+test('12. Proteção de Modais Abertos - Falha de atualização durante modal aberto bloqueia confirmação e não envia comando', async () => {
+  let isStale = false;
+  let modalSession: { id: string } | null = { id: '50' };
+  let password = 'SecretPassword123!';
+  let mutationCalls = 0;
+
+  const handleConfirmPause = async () => {
+    if (isStale || !modalSession || !password.trim()) {
+      return { status: 'rejected', reason: isStale ? 'STALE_DATA' : 'INVALID_INPUT' };
+    }
+    mutationCalls += 1;
+    return { status: 'executed' };
+  };
+
+  const isConfirmDisabled = (stale: boolean, pwd: string, isPending: boolean) =>
+    stale || !pwd.trim() || isPending;
+
+  // 1. Modal aberto em estado saudável com senha preenchida: pode confirmar
+  assert.equal(isConfirmDisabled(isStale, password, false), false);
+
+  // 2. Ocorre falha de sincronização de rede em segundo plano enquanto modal está aberto
+  isStale = true;
+
+  // 3. Botão de confirmação torna-se desabilitado imediatamente
+  assert.equal(isConfirmDisabled(isStale, password, false), true);
+
+  // 4. Se o usuário ou automação tentar acionar handleConfirmPause, a ação é barrada
+  const resultWhileStale = await handleConfirmPause();
+  assert.deepEqual(resultWhileStale, { status: 'rejected', reason: 'STALE_DATA' });
+  assert.equal(mutationCalls, 0, 'Nenhuma chamada de mutação pode ser disparada durante isStale');
+});
+
+test('13. Recuperação Pós-Atualização - Libera comandos na tela e no modal imediatamente após refetch bem-sucedido', async () => {
+  let isMonitoringsError = true;
+  let isCamerasError = false;
+  const hasMonitorings = true;
+  const hasCameras = true;
+  let mutationCalls = 0;
+
+  let isStale = (isMonitoringsError && hasMonitorings) || (isCamerasError && hasCameras);
+  assert.equal(isStale, true, 'Inicialmente bloqueado por falha anterior');
+
+  // Modal aberto e senha já digitada
+  const modalSession = { id: '50' };
+  const password = 'MinhaSenhaSegura456!';
+
+  const isConfirmDisabled = (stale: boolean, pwd: string) => stale || !pwd.trim();
+  assert.equal(isConfirmDisabled(isStale, password), true, 'Confirmação bloqueada enquanto stale');
+
+  // Usuário aciona "Tentar novamente" / "Atualizar" no banner do modal ou da tela
+  const handleRefresh = async () => {
+    // Simula refetch com êxito na API
+    isMonitoringsError = false;
+    isCamerasError = false;
+    isStale = (isMonitoringsError && hasMonitorings) || (isCamerasError && hasCameras);
+  };
+
+  await handleRefresh();
+
+  // isStale volta para false
+  assert.equal(isStale, false, 'isStale deve ser false após atualização bem-sucedida');
+
+  // Confirmação do modal é imediatamente liberada com a senha preservada
+  assert.equal(isConfirmDisabled(isStale, password), false, 'Confirmação reabilitada após refresh');
+
+  // Execução do comando agora tem êxito
+  const handleConfirmPause = async () => {
+    if (isStale || !modalSession || !password.trim()) {
+      return { status: 'rejected' };
+    }
+    mutationCalls += 1;
+    return { status: 'executed' };
+  };
+
+  const resultAfterRefresh = await handleConfirmPause();
+  assert.deepEqual(resultAfterRefresh, { status: 'executed' });
+  assert.equal(mutationCalls, 1, 'Comando executado com sucesso após restabelecimento dos dados');
+});
+

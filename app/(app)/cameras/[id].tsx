@@ -432,7 +432,7 @@ export default function CameraDetailsScreen() {
                   <View style={styles.noticeBox}>
                     <AppIcon name="info" size={14} color={colors.textMuted} decorative={true} />
                     <AppText variant="caption" colorRole="textMuted" style={styles.noticeText}>
-                      A visualização completa de detalhes e evidência do alerta estará disponível na Fatia 7.
+                      Toque em um alerta para visualizar os detalhes completos e o frame de evidência.
                     </AppText>
                   </View>
                 </View>

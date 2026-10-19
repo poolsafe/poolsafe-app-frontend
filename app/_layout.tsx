@@ -208,7 +208,7 @@ function RootContent({
             icon="wifi-off"
             message={
               recoverableError?.detail ||
-              'Não foi possível validar sua sessão junto ao servidor local. Verifique sua conexão e tente novamente.'
+              'Não foi possível validar sua sessão junto ao servidor. Verifique sua conexão e tente novamente.'
             }
           />
 

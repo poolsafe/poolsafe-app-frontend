@@ -200,6 +200,7 @@ export default function MonitoringControlScreen() {
   };
 
   const toggleCameraSelection = (cameraId: string) => {
+    if (isStale) return;
     const eligibility = cameraEligibilityMap.get(cameraId);
     if (!eligibility?.eligible) return;
 
@@ -216,6 +217,13 @@ export default function MonitoringControlScreen() {
 
   // Iniciar novo monitoramento
   const handleStartMonitoring = async () => {
+    if (isStale) {
+      setFeedback({
+        type: 'error',
+        message: 'Atualize os dados da tela antes de iniciar uma nova sessão.',
+      });
+      return;
+    }
     if (selectedCameraIds.size === 0 || startMutation.isPending) return;
     setFeedback(null);
 
@@ -247,6 +255,13 @@ export default function MonitoringControlScreen() {
 
   // Abrir diálogo de confirmação com senha para pausa
   const handleOpenPauseModal = (session: MonitoringItem) => {
+    if (isStale) {
+      setFeedback({
+        type: 'error',
+        message: 'Atualize os dados da tela antes de pausar a sessão.',
+      });
+      return;
+    }
     setPauseModalSession(session);
     setPausePassword('');
     setPauseError(null);
@@ -261,6 +276,10 @@ export default function MonitoringControlScreen() {
 
   // Confirmar pausa reforçada
   const handleConfirmPause = async () => {
+    if (isStale) {
+      setPauseError('Dados desatualizados. Atualize os dados antes de prosseguir.');
+      return;
+    }
     if (!pauseModalSession || !pausePassword.trim() || pauseMutation.isPending) return;
 
     setPauseError(null);
@@ -296,6 +315,13 @@ export default function MonitoringControlScreen() {
 
   // Retomada de sessão pausada
   const handleResumeMonitoring = async (session: MonitoringItem) => {
+    if (isStale) {
+      setFeedback({
+        type: 'error',
+        message: 'Atualize os dados da tela antes de retomar a sessão.',
+      });
+      return;
+    }
     if (resumeMutation.isPending) return;
     setFeedback(null);
 
@@ -334,6 +360,13 @@ export default function MonitoringControlScreen() {
 
   // Abrir diálogo de encerramento
   const handleOpenEndModal = (session: MonitoringItem) => {
+    if (isStale) {
+      setFeedback({
+        type: 'error',
+        message: 'Atualize os dados da tela antes de encerrar a sessão.',
+      });
+      return;
+    }
     setEndModalSession(session);
     setEndPassword('');
     setEndError(null);
@@ -347,6 +380,10 @@ export default function MonitoringControlScreen() {
 
   // Confirmar encerramento da sessão com senha
   const handleConfirmEnd = async () => {
+    if (isStale) {
+      setEndError('Dados desatualizados. Atualize os dados antes de prosseguir.');
+      return;
+    }
     if (!endModalSession || !endPassword.trim() || endMutation.isPending) return;
     setEndError(null);
 
@@ -460,7 +497,7 @@ export default function MonitoringControlScreen() {
             variant="warning"
             icon="alert-circle"
             title="Dados desatualizados"
-            message="Não foi possível atualizar o estado do monitoramento com o servidor. Ações sensíveis dependem de confirmação da rede."
+            message="Não foi possível sincronizar o estado mais recente do monitoramento com o servidor. Os comandos de início, pausa, retomada e encerramento estão bloqueados até a atualização dos dados."
             actionTitle="Tentar novamente"
             onAction={handleRefresh}
             actionLoading={isRefreshing}
@@ -578,6 +615,7 @@ export default function MonitoringControlScreen() {
                             title="Pausar"
                             icon="pause"
                             style={styles.flexButton}
+                            disabled={isStale}
                             onPress={() => handleOpenPauseModal(session)}
                           />
                         ) : (
@@ -586,6 +624,7 @@ export default function MonitoringControlScreen() {
                             title="Retomar"
                             icon="play"
                             style={styles.flexButton}
+                            disabled={isStale}
                             loading={resumeMutation.isPending}
                             onPress={() => handleResumeMonitoring(session)}
                           />
@@ -595,9 +634,19 @@ export default function MonitoringControlScreen() {
                           title="Encerrar"
                           icon="power"
                           style={styles.flexButton}
+                          disabled={isStale}
                           onPress={() => handleOpenEndModal(session)}
                         />
                       </View>
+                      {isStale && (
+                        <AppText
+                          variant="caption"
+                          colorRole="textMuted"
+                          style={styles.staleHelpText}
+                        >
+                          Comandos bloqueados até a atualização dos dados com o servidor.
+                        </AppText>
+                      )}
                     </View>
                   </AppCard>
                 );
@@ -639,11 +688,11 @@ export default function MonitoringControlScreen() {
                     <Pressable
                       key={`select-cam-${cam.id}`}
                       onPress={() => toggleCameraSelection(cam.id)}
-                      disabled={!eligibility.eligible}
+                      disabled={!eligibility.eligible || isStale}
                       accessibilityRole="checkbox"
                       accessibilityState={{
                         checked: isSelected,
-                        disabled: !eligibility.eligible,
+                        disabled: !eligibility.eligible || isStale,
                       }}
                       style={({ pressed }) => [
                         styles.cameraSelectionCard,
@@ -653,10 +702,10 @@ export default function MonitoringControlScreen() {
                             : colors.surface,
                           borderColor: isSelected
                             ? colors.primary
-                            : eligibility.eligible
+                            : eligibility.eligible && !isStale
                             ? colors.border
                             : colors.borderSubtle,
-                          opacity: !eligibility.eligible ? 0.6 : pressed ? 0.9 : 1,
+                          opacity: !eligibility.eligible || isStale ? 0.6 : pressed ? 0.9 : 1,
                         },
                       ]}
                     >
@@ -728,14 +777,16 @@ export default function MonitoringControlScreen() {
               <AppButton
                 variant="primary"
                 title={
-                  selectedCameraIds.size > 0
+                  isStale
+                    ? 'Atualize os dados para iniciar'
+                    : selectedCameraIds.size > 0
                     ? `Iniciar monitoramento (${selectedCameraIds.size} ${
                         selectedCameraIds.size === 1 ? 'câmera' : 'câmeras'
                       })`
                     : 'Selecione ao menos uma câmera'
                 }
                 icon="play"
-                disabled={selectedCameraIds.size === 0 || startMutation.isPending}
+                disabled={isStale || selectedCameraIds.size === 0 || startMutation.isPending}
                 loading={startMutation.isPending}
                 fullWidth={true}
                 onPress={handleStartMonitoring}
@@ -786,6 +837,19 @@ export default function MonitoringControlScreen() {
               </View>
             )}
 
+            {isStale && (
+              <AppBanner
+                variant="warning"
+                icon="alert-circle"
+                title="Dados desatualizados"
+                message="A sincronização com o servidor falhou enquanto este diálogo estava aberto. Atualize os dados para liberar a confirmação."
+                actionTitle="Atualizar"
+                onAction={handleRefresh}
+                actionLoading={isRefreshing}
+                style={styles.modalBanner}
+              />
+            )}
+
             {pauseError && (
               <AppBanner
                 variant="danger"
@@ -820,7 +884,7 @@ export default function MonitoringControlScreen() {
                 title="Pausar"
                 icon="pause"
                 loading={pauseMutation.isPending}
-                disabled={!pausePassword.trim() || pauseMutation.isPending}
+                disabled={!pausePassword.trim() || pauseMutation.isPending || isStale}
                 onPress={handleConfirmPause}
                 style={styles.modalButton}
               />
@@ -873,6 +937,19 @@ export default function MonitoringControlScreen() {
               </View>
             )}
 
+            {isStale && (
+              <AppBanner
+                variant="warning"
+                icon="alert-circle"
+                title="Dados desatualizados"
+                message="A sincronização com o servidor falhou enquanto este diálogo estava aberto. Atualize os dados para liberar a confirmação."
+                actionTitle="Atualizar"
+                onAction={handleRefresh}
+                actionLoading={isRefreshing}
+                style={styles.modalBanner}
+              />
+            )}
+
             {endError && (
               <AppBanner
                 variant="danger"
@@ -907,7 +984,7 @@ export default function MonitoringControlScreen() {
                 title="Encerrar"
                 icon="power"
                 loading={endMutation.isPending}
-                disabled={!endPassword.trim() || endMutation.isPending}
+                disabled={!endPassword.trim() || endMutation.isPending || isStale}
                 onPress={handleConfirmEnd}
                 style={styles.modalButton}
               />
@@ -1014,6 +1091,10 @@ const styles = StyleSheet.create({
   },
   sessionActions: {
     marginTop: spacing[1],
+  },
+  staleHelpText: {
+    marginTop: spacing[2],
+    textAlign: 'center',
   },
   sessionActionsRow: {
     flexDirection: 'row',

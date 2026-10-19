@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/useTheme';
 import { AppText } from './AppText';
 import { AppIcon, FeatherIconName } from './AppIcon';
 import { AppButton } from './AppButton';
-import { radius, spacing } from '@/theme/tokens';
+import { layout, radius, spacing } from '@/theme/tokens';
 
 export type BannerVariant = 'danger' | 'warning' | 'info' | 'success';
 
@@ -149,8 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   actionButton: {
-    minHeight: 36,
-    height: 36,
+    minHeight: layout.touchTargetMin,
     paddingHorizontal: spacing[3],
   },
 });
