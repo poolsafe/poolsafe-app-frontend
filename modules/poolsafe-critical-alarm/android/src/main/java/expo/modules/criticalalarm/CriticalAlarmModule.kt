@@ -35,13 +35,14 @@ class CriticalAlarmModule : Module() {
         } catch (_: Exception) {}
       }
 
-      CriticalAlarmForegroundService.onStateChangeListener = { isActive, reason ->
+      CriticalAlarmForegroundService.onStateChangeListener = { isActive, reason, alertId ->
         try {
           sendEvent(
             "onAlarmStateChanged",
             mapOf(
               "isActive" to isActive,
-              "reason" to (reason ?: "")
+              "reason" to (reason ?: ""),
+              "alertId" to (alertId ?: "")
             )
           )
         } catch (_: Exception) {}
@@ -99,6 +100,39 @@ class CriticalAlarmModule : Module() {
     Function("getActiveDeliveryId") {
       val context = appContext.reactContext ?: return@Function null
       return@Function AlarmStateManager.getInstance(context).getActiveDeliveryId()
+    }
+
+    Function("getLaunchAlertIntent") {
+      val activity = appContext.currentActivity ?: return@Function null
+      val intent = activity.intent ?: return@Function null
+      val alertId = intent.getStringExtra("alertId")
+        ?: intent.data?.getQueryParameter("alertId")
+        ?: intent.data?.lastPathSegment
+      val deliveryId = intent.getStringExtra("deliveryId")
+        ?: intent.data?.getQueryParameter("deliveryId")
+      val source = intent.getStringExtra("source")
+        ?: intent.data?.getQueryParameter("source")
+
+      if (!alertId.isNullOrBlank()) {
+        return@Function mapOf(
+          "alertId" to alertId,
+          "deliveryId" to (deliveryId ?: ""),
+          "source" to (source ?: "")
+        )
+      }
+      return@Function null
+    }
+
+    Function("clearLaunchAlertIntent") {
+      val activity = appContext.currentActivity ?: return@Function false
+      val intent = activity.intent ?: return@Function false
+      intent.removeExtra("alertId")
+      intent.removeExtra("deliveryId")
+      intent.removeExtra("source")
+      if (intent.data?.scheme == "poolsafe") {
+        intent.data = null
+      }
+      return@Function true
     }
 
     AsyncFunction("clearAlarmStateForTesting") {

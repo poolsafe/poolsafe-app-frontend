@@ -64,8 +64,10 @@ export interface CriticalAlarmDriver {
   clearAlarmStateForTestingAsync?: () => Promise<boolean>;
   isIgnoringBatteryOptimizations?: () => boolean;
   openBatteryOptimizationSettingsAsync?: () => Promise<boolean>;
+  getLaunchAlertIntent?: () => { alertId: string; deliveryId?: string; source?: string } | null;
+  clearLaunchAlertIntent?: () => boolean;
   addListener?: (
-    listener: (event: { isActive: boolean; reason?: string }) => void,
+    listener: (event: { isActive: boolean; reason?: string; alertId?: string }) => void,
   ) => { remove: () => void };
 }
 
@@ -124,6 +126,8 @@ function getCriticalAlarmDriver(): CriticalAlarmDriver {
         isIgnoringBatteryOptimizations: () => mod.isIgnoringBatteryOptimizations?.() ?? false,
         openBatteryOptimizationSettingsAsync: () =>
           mod.openBatteryOptimizationSettingsAsync?.() ?? Promise.resolve(false),
+        getLaunchAlertIntent: () => mod.getLaunchAlertIntent?.() ?? null,
+        clearLaunchAlertIntent: () => mod.clearLaunchAlertIntent?.() ?? true,
         addListener: (listener) => mod.addCriticalAlarmListener?.(listener) ?? { remove: () => {} },
       };
     } catch {
@@ -136,6 +140,8 @@ function getCriticalAlarmDriver(): CriticalAlarmDriver {
         clearAlarmStateForTestingAsync: async () => false,
         isIgnoringBatteryOptimizations: () => false,
         openBatteryOptimizationSettingsAsync: async () => false,
+        getLaunchAlertIntent: () => null,
+        clearLaunchAlertIntent: () => true,
         addListener: () => ({ remove: () => {} }),
       };
     }
@@ -703,10 +709,24 @@ export class NotificationsService {
   }
 
   /**
+   * Obtém os dados de intent de lançamento/abertura do app para alertas, se houver.
+   */
+  getLaunchAlertIntent(): { alertId: string; deliveryId?: string; source?: string } | null {
+    return this.criticalAlarm.getLaunchAlertIntent?.() ?? null;
+  }
+
+  /**
+   * Limpa o intent de alerta da Activity para evitar leituras repetidas.
+   */
+  clearLaunchAlertIntent(): boolean {
+    return this.criticalAlarm.clearLaunchAlertIntent?.() ?? true;
+  }
+
+  /**
    * Adiciona um ouvinte para alterações de estado do alarme crítico nativo.
    */
   addCriticalAlarmListener(
-    listener: (event: { isActive: boolean; reason?: string }) => void,
+    listener: (event: { isActive: boolean; reason?: string; alertId?: string }) => void,
   ): { remove: () => void } {
     return this.criticalAlarm.addListener
       ? this.criticalAlarm.addListener(listener)

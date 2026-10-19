@@ -14,6 +14,22 @@ class CriticalAlarmModuleWeb extends NativeModule<CriticalAlarmEvents> {
     return false;
   }
 
+  getActiveAlertId(): string | null {
+    return null;
+  }
+
+  getActiveDeliveryId(): string | null {
+    return null;
+  }
+
+  getLaunchAlertIntent(): import('./CriticalAlarm.types').LaunchAlertIntent | null {
+    return null;
+  }
+
+  clearLaunchAlertIntent(): boolean {
+    return true;
+  }
+
   isIgnoringBatteryOptimizations(): boolean {
     return false;
   }

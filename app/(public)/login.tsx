@@ -24,6 +24,7 @@ import { useAuth } from '@/providers/AuthContext';
 import { ApiError } from '@/services/api/errors';
 import { ApiErrorCodes } from '@/services/api/types';
 import { AppLogo } from '@/components/primitives/AppLogo';
+import { alertNavigationCoordinator } from '@/services/navigation/alert-navigation-coordinator';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -52,8 +53,15 @@ export default function LoginScreen() {
         password: data.password,
       });
 
-      // Transição atômica para a área autenticada sem retorno ao Login pelo botão Voltar
-      router.replace('/(app)/(tabs)');
+      // Transição atômica para a área autenticada:
+      // Se houver destino pendente legítimo para esta conta, transiciona diretamente para o alerta;
+      // Caso contrário, encaminha normalmente para as abas principais (Home).
+      const pendingAlertId = alertNavigationCoordinator.consumePendingDestination();
+      if (pendingAlertId) {
+        router.replace(`/(app)/alerts/${pendingAlertId}` as any);
+      } else {
+        router.replace('/(app)/(tabs)');
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.isInvalidCredentials()) {

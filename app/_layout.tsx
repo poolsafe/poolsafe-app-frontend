@@ -23,6 +23,8 @@ import { AppBanner } from '@/components/primitives/AppBanner';
 import { AppButton } from '@/components/primitives/AppButton';
 import { AppCard } from '@/components/primitives/AppCard';
 import { spacing } from '@/theme/tokens';
+import * as Linking from 'expo-linking';
+import { alertNavigationCoordinator } from '@/services/navigation/alert-navigation-coordinator';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -61,9 +63,21 @@ function useProtectedRoute(status: AuthStatus) {
     const inPublicGroup = firstSegment === '(public)';
 
     if (status === 'unauthenticated' && inAppGroup) {
+      // Se o usuário foi redirecionado ao login enquanto acessava um detalhe, preserva o destino
+      if (segments[1] === 'alerts' && segments[2]) {
+        alertNavigationCoordinator.setPendingDestination({
+          alertId: String(segments[2]),
+          source: 'deep_link',
+        });
+      }
       router.replace('/(public)/login');
     } else if (status === 'authenticated' && inPublicGroup) {
-      router.replace('/(app)/(tabs)');
+      const pendingAlertId = alertNavigationCoordinator.consumePendingDestination();
+      if (pendingAlertId) {
+        router.replace(`/(app)/alerts/${pendingAlertId}` as any);
+      } else {
+        router.replace('/(app)/(tabs)');
+      }
     }
   }, [status, segments, router]);
 }
@@ -75,10 +89,93 @@ function RootContent({
   fontsLoaded: boolean;
   fontError: Error | null;
 }) {
+  const router = useRouter();
   const { colors, isDark } = useTheme();
   const { status, recoverableError, retryRestore, logout } = useAuth();
 
   useProtectedRoute(status);
+
+  // Inicializa o coordenador central de alertas e vincula navegação
+  useEffect(() => {
+    alertNavigationCoordinator.init();
+    alertNavigationCoordinator.setNavigationHandler(({ route }) => {
+      router.push(route as any);
+    });
+    return () => {
+      alertNavigationCoordinator.setNavigationHandler(null);
+    };
+  }, [router]);
+
+  // Captura e deduplica deep links (poolsafe://alerts/:id) na abertura a frio e em background
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (!url) return;
+      try {
+        const parsed = Linking.parse(url);
+        const path = parsed.path || '';
+        const segments = path.split('/').filter(Boolean);
+        const alertIdx = segments.indexOf('alerts');
+        const alertId =
+          alertIdx >= 0 && segments[alertIdx + 1]
+            ? segments[alertIdx + 1]
+            : (parsed.queryParams?.alertId as string | undefined);
+        const deliveryId = parsed.queryParams?.deliveryId as string | undefined;
+        const source = (parsed.queryParams?.source as any) || 'deep_link';
+
+        if (alertId) {
+          alertNavigationCoordinator.handleIncomingAlert({
+            alertId,
+            deliveryId,
+            source,
+            isAuthenticated: status === 'authenticated',
+          });
+        }
+      } catch {
+        // Silencia URLs com formato inesperado
+      }
+    };
+
+    void Linking.getInitialURL().then(handleUrl);
+    const sub = Linking.addEventListener('url', (event) => handleUrl(event.url));
+    return () => sub.remove();
+  }, [status]);
+
+  // Captura respostas de notificação push pelo Expo Notifications
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Notifications = require('expo-notifications');
+      void Notifications.getLastNotificationResponseAsync?.().then((response: any) => {
+        const alertId = response?.notification?.request?.content?.data?.alertId;
+        const deliveryId = response?.notification?.request?.content?.data?.deliveryId;
+        if (alertId) {
+          alertNavigationCoordinator.handleIncomingAlert({
+            alertId,
+            deliveryId,
+            source: 'expo_notification',
+            isAuthenticated: status === 'authenticated',
+          });
+        }
+      });
+
+      const sub = Notifications.addNotificationResponseReceivedListener?.((response: any) => {
+        const alertId = response?.notification?.request?.content?.data?.alertId;
+        const deliveryId = response?.notification?.request?.content?.data?.deliveryId;
+        if (alertId) {
+          alertNavigationCoordinator.handleIncomingAlert({
+            alertId,
+            deliveryId,
+            source: 'expo_notification',
+            isAuthenticated: status === 'authenticated',
+          });
+        }
+      });
+
+      return () => sub?.remove?.();
+    } catch {
+      // Silencia caso o módulo de notificações esteja mockado
+    }
+  }, [status]);
 
   // Enquanto as fontes ou a sessão inicial estiverem carregando, exibe indicador de carregamento
   // evitando que a tela de login pisque antes do término da restauração
@@ -129,6 +226,7 @@ function RootContent({
               icon="log-in"
               fullWidth={true}
               onPress={async () => {
+                alertNavigationCoordinator.onCancelOrDismiss();
                 await logout();
               }}
             />

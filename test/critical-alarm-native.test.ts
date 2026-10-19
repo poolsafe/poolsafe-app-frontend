@@ -393,3 +393,32 @@ test('8. Task 9B.4 - Transição para segundo alerta distinto atualiza contexto 
   await service.stopCriticalAlarmAsync();
   assert.equal(service.isCriticalAlarmActive(), false);
 });
+
+// -----------------------------------------------------------------------------
+// 9. Recusa ou Falha de Início do Foreground Service pelo SO
+// -----------------------------------------------------------------------------
+test('9. Recusa pelo SO - Falha de início do serviço nativo retorna false e mantém estado inativo seguro', async () => {
+  const mockCriticalDriver: CriticalAlarmDriver = {
+    startAlarmAsync: async () => false, // SO recusou (ex: ForegroundServiceStartNotAllowedException)
+    stopAlarmAsync: async () => true,
+    isAlarmActive: () => false,
+    getActiveAlertId: () => null,
+    getActiveDeliveryId: () => null,
+  };
+
+  const service = new NotificationsService(undefined, undefined, mockCriticalDriver);
+
+  assert.equal(service.isCriticalAlarmActive(), false);
+
+  const startResult = await service.startCriticalAlarmAsync({
+    alertId: 'alert-failed-start',
+    deliveryId: 'deliv-failed-start',
+  });
+
+  // O serviço reporta false sem lançar exceções não tratadas
+  assert.equal(startResult, false);
+  // O estado permanece inativo
+  assert.equal(service.isCriticalAlarmActive(), false);
+  assert.equal(service.getActiveAlertId(), null);
+  assert.equal(service.getActiveDeliveryId(), null);
+});

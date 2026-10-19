@@ -81,7 +81,7 @@ class CriticalAlarmForegroundService : Service() {
     var currentMessage: String? = null
       private set
 
-    var onStateChangeListener: ((isActive: Boolean, reason: String?) -> Unit)? = null
+    var onStateChangeListener: ((isActive: Boolean, reason: String?, alertId: String?) -> Unit)? = null
   }
 
   private var mediaPlayer: MediaPlayer? = null
@@ -143,7 +143,7 @@ class CriticalAlarmForegroundService : Service() {
       AlarmStateManager.getInstance(this).markAlertActive(alertId, deliveryId)
     }
 
-    notifyStateChanged(true, null)
+    notifyStateChanged(true, null, alertId)
 
     // 1. Cria canal específico do Foreground Service (silencioso e sem vibração)
     createServiceNotificationChannel()
@@ -227,7 +227,7 @@ class CriticalAlarmForegroundService : Service() {
     // Reinicia o prazo de timeout para conceder 30 segundos completos ao novo alerta distinto
     scheduleAutoTimeout()
 
-    notifyStateChanged(true, "new_alert_${newAlertId}")
+    notifyStateChanged(true, "new_alert_${newAlertId}", newAlertId)
   }
 
   private fun getNotificationSmallIcon(): Int {
@@ -272,7 +272,16 @@ class CriticalAlarmForegroundService : Service() {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+      action = Intent.ACTION_VIEW
+      if (!currentAlertId.isNullOrBlank()) {
+        data = android.net.Uri.parse("poolsafe://alerts/$currentAlertId?deliveryId=${currentDeliveryId ?: ""}&source=critical_service")
+        putExtra("alertId", currentAlertId)
+        putExtra("deliveryId", currentDeliveryId)
+        putExtra("source", "critical_service")
+      }
+      flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
     val contentPendingIntent = if (launchIntent != null) {
       PendingIntent.getActivity(
         this,
@@ -574,15 +583,15 @@ class CriticalAlarmForegroundService : Service() {
     } catch (_: Exception) {}
 
     // 7. Notifica ouvinte TypeScript sobre a alteração de estado
-    notifyStateChanged(false, reason)
+    notifyStateChanged(false, reason, dismissedAlertId)
 
     // 8. Encerra o serviço
     stopSelf()
   }
 
-  private fun notifyStateChanged(active: Boolean, reason: String?) {
+  private fun notifyStateChanged(active: Boolean, reason: String?, alertId: String? = currentAlertId) {
     try {
-      onStateChangeListener?.invoke(active, reason)
+      onStateChangeListener?.invoke(active, reason, alertId)
     } catch (_: Exception) {}
   }
 

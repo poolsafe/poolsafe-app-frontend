@@ -213,7 +213,13 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
       }
     }
 
-    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+      action = Intent.ACTION_VIEW
+      data = android.net.Uri.parse("poolsafe://alerts/$alertId?source=delayed_notification")
+      putExtra("alertId", alertId)
+      putExtra("source", "delayed_notification")
+      flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
     val contentPendingIntent = if (launchIntent != null) {
       PendingIntent.getActivity(
         this,

@@ -12,6 +12,7 @@ import { ApiError } from '@/services/api/errors';
 import { authService, AuthService } from '@/services/auth/auth-service';
 import { refreshCoordinator } from '@/services/auth/refresh-coordinator';
 import { deviceSyncService, DeviceSyncService } from '@/services/devices/device-sync-service';
+import { alertNavigationCoordinator } from '@/services/navigation/alert-navigation-coordinator';
 import { queryClient } from './QueryClientProvider';
 
 export type AuthStatus =
@@ -66,6 +67,7 @@ export function AuthProvider({
       setUser(result.user);
       setTokens(result.tokens);
       setStatus('authenticated');
+      alertNavigationCoordinator.onUserAuthenticated(result.user.id);
       void deviceSync.syncDeviceAsync(result.tokens);
     } else if (result.status === 'unauthenticated') {
       setUser(null);
@@ -89,6 +91,7 @@ export function AuthProvider({
       setTokens(response.tokens);
       setStatus('authenticated');
       setRecoverableError(null);
+      alertNavigationCoordinator.onUserAuthenticated(response.user.id);
       void deviceSync.syncDeviceAsync(response.tokens);
     },
     [service, deviceSync],
@@ -101,6 +104,7 @@ export function AuthProvider({
       setTokens(response.tokens);
       setStatus('authenticated');
       setRecoverableError(null);
+      alertNavigationCoordinator.onUserAuthenticated(response.user.id);
       void deviceSync.syncDeviceAsync(response.tokens);
     },
     [service, deviceSync],
@@ -113,6 +117,7 @@ export function AuthProvider({
     } catch {
       await service.logout(currentRefreshToken);
     } finally {
+      alertNavigationCoordinator.onExplicitLogout();
       setUser(null);
       setTokens(null);
       setStatus('unauthenticated');

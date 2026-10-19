@@ -14,6 +14,13 @@ export interface StartAlarmOptions {
 export interface AlarmStateChangedEvent {
   isActive: boolean;
   reason?: string;
+  alertId?: string;
+}
+
+export interface LaunchAlertIntent {
+  alertId: string;
+  deliveryId?: string;
+  source?: string;
 }
 
 export type AlarmStateChangeListener = (event: AlarmStateChangedEvent) => void;
@@ -21,3 +28,4 @@ export type AlarmStateChangeListener = (event: AlarmStateChangedEvent) => void;
 export type CriticalAlarmEvents = {
   onAlarmStateChanged: (event: AlarmStateChangedEvent) => void;
 };
+

@@ -45,6 +45,14 @@ export async function openBatteryOptimizationSettingsAsync(): Promise<boolean> {
   return await CriticalAlarmModule.openBatteryOptimizationSettings();
 }
 
+export function getLaunchAlertIntent(): import('./CriticalAlarm.types').LaunchAlertIntent | null {
+  return CriticalAlarmModule.getLaunchAlertIntent?.() ?? null;
+}
+
+export function clearLaunchAlertIntent(): boolean {
+  return CriticalAlarmModule.clearLaunchAlertIntent?.() ?? true;
+}
+
 export function addCriticalAlarmListener(
   listener: AlarmStateChangeListener,
 ): { remove: () => void } {

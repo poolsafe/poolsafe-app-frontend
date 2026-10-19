@@ -13,6 +13,8 @@ declare class CriticalAlarmModuleInstance extends NativeModule<CriticalAlarmEven
   clearAlarmStateForTesting(): Promise<boolean>;
   isIgnoringBatteryOptimizations(): boolean;
   openBatteryOptimizationSettings(): Promise<boolean>;
+  getLaunchAlertIntent(): import('./CriticalAlarm.types').LaunchAlertIntent | null;
+  clearLaunchAlertIntent(): boolean;
 }
 
 export default requireNativeModule<CriticalAlarmModuleInstance>('CriticalAlarm');
