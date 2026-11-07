@@ -96,7 +96,7 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
 
     val isValidContract = schemaVersion == "1" &&
         type == "ALERT" &&
-        severity == "CRITICA" &&
+        (severity == "CRITICA" || severity == "ATENCAO") &&
         !alertId.isNullOrBlank() &&
         !deliveryId.isNullOrBlank()
 
@@ -113,6 +113,14 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
     // 4. Deduplicação de entrega (deliveryId já processado anteriormente nas últimas 24h)
     if (stateManager.isDeliveryProcessed(deliveryId)) {
       Log.i(TAG, "Entrega duplicada ignorada: deliveryId=$deliveryId, alertId=$alertId")
+      return false
+    }
+
+    // 4.1. Alerta de nível ATENCAO: registra entrega e apresenta apenas notificação silenciosa (sem sirene)
+    if (severity == "ATENCAO") {
+      Log.i(TAG, "Alerta ATENCAO recebido: alertId=$alertId, deliveryId=$deliveryId. Apresentando notificação silenciosa.")
+      stateManager.recordDeliveryProcessed(deliveryId)
+      showConventionalDelayedNotification(alertId, title, message, isDelayed = false)
       return false
     }
 
@@ -190,7 +198,8 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
   private fun showConventionalDelayedNotification(
     alertId: String,
     title: String?,
-    message: String?
+    message: String?,
+    isDelayed: Boolean = true
   ) {
     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
       ?: return
@@ -232,7 +241,7 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
     val iconRes = getNotificationSmallIcon()
     val displayTitle = if (!title.isNullOrBlank()) title else "Alerta PoolSafe"
     val displayBody = if (!message.isNullOrBlank()) {
-      "$message (Recebido com atraso)"
+      if (isDelayed) "$message (Recebido com atraso)" else message
     } else {
       "Possível situação de risco detectada anteriormente na piscina."
     }
