@@ -45,6 +45,11 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
     const val CHANNEL_DELAYED_ID = "poolsafe_delayed_alerts_v1"
     const val CHANNEL_DELAYED_NAME = "Alertas Informativos PoolSafe"
     const val CHANNEL_DELAYED_DESC = "Notificações informativas de alertas recebidos com atraso (sem som e sem vibração)"
+
+    // Canal dedicado para alertas de nível ATENCAO (banner flutuante no topo, sem sirene sonora)
+    const val CHANNEL_ATTENTION_ID = "poolsafe_alertas_atencao_v1"
+    const val CHANNEL_ATTENTION_NAME = "Alertas de Atenção PoolSafe"
+    const val CHANNEL_ATTENTION_DESC = "Notificações em destaque para alertas de nível atenção (sem sirene)"
   }
 
   override fun onNewToken(token: String) {
@@ -204,21 +209,41 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
       ?: return
 
+    val targetChannelId = if (isDelayed) CHANNEL_DELAYED_ID else CHANNEL_ATTENTION_ID
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val existingChannel = notificationManager.getNotificationChannel(CHANNEL_DELAYED_ID)
-      if (existingChannel == null) {
-        val channel = NotificationChannel(
-          CHANNEL_DELAYED_ID,
-          CHANNEL_DELAYED_NAME,
-          NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-          description = CHANNEL_DELAYED_DESC
-          setSound(null, null)
-          enableVibration(false)
-          vibrationPattern = longArrayOf(0)
-          setShowBadge(true)
+      if (isDelayed) {
+        val existingChannel = notificationManager.getNotificationChannel(CHANNEL_DELAYED_ID)
+        if (existingChannel == null) {
+          val channel = NotificationChannel(
+            CHANNEL_DELAYED_ID,
+            CHANNEL_DELAYED_NAME,
+            NotificationManager.IMPORTANCE_DEFAULT
+          ).apply {
+            description = CHANNEL_DELAYED_DESC
+            setSound(null, null)
+            enableVibration(false)
+            vibrationPattern = longArrayOf(0)
+            setShowBadge(true)
+          }
+          notificationManager.createNotificationChannel(channel)
         }
-        notificationManager.createNotificationChannel(channel)
+      } else {
+        val existingChannel = notificationManager.getNotificationChannel(CHANNEL_ATTENTION_ID)
+        if (existingChannel == null) {
+          val channel = NotificationChannel(
+            CHANNEL_ATTENTION_ID,
+            CHANNEL_ATTENTION_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+          ).apply {
+            description = CHANNEL_ATTENTION_DESC
+            setSound(null, null)
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 250, 150, 250)
+            setShowBadge(true)
+          }
+          notificationManager.createNotificationChannel(channel)
+        }
       }
     }
 
@@ -246,16 +271,20 @@ class PoolSafeFirebaseMessagingService : ExpoFirebaseMessagingService() {
       "Possível situação de risco detectada anteriormente na piscina."
     }
 
-    val notification = NotificationCompat.Builder(this, CHANNEL_DELAYED_ID)
+    val notification = NotificationCompat.Builder(this, targetChannelId)
       .setContentTitle(displayTitle)
       .setContentText(displayBody)
       .setSmallIcon(iconRes)
       .setColor(0xFF00E5FF.toInt())
       .setAutoCancel(true)
-      .setSilent(true)
-      .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+      .setPriority(if (isDelayed) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_EVENT)
       .apply {
+        if (isDelayed) {
+          setSilent(true)
+        } else {
+          setVibrate(longArrayOf(0, 250, 150, 250))
+        }
         contentPendingIntent?.let { setContentIntent(it) }
       }
       .build()
